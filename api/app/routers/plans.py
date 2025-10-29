@@ -51,13 +51,16 @@ plan_assets_router = APIRouter(prefix="/api/v1/plans", tags=["plans"])
 
 
 class PlannerClaim(BaseModel):
-    dataset: Optional[str] = None
+    dataset: Optional[str] = Field(None, alias="dataset_name")
     split: Optional[str] = None
-    metric: Optional[str] = None
-    value: Optional[float] = None
+    metric: Optional[str] = Field(None, alias="metric_name")
+    value: Optional[float] = Field(None, alias="metric_value")
     units: Optional[str] = None
     citation: str = Field(..., min_length=1)
     confidence: float = Field(..., ge=0.0, le=1.0)
+
+    class Config:
+        populate_by_name = True  # Accept both "dataset" and "dataset_name"
 
 
 class PlannerRequest(BaseModel):
@@ -463,11 +466,12 @@ async def create_plan(
 
             # Synthesize minimal prose for Stage 2 to process
             claims_list = [f"{c.dataset} ({c.metric}: {c.value}{c.units or ''})" for c in payload.claims]
+            first_dataset = payload.claims[0].dataset if payload.claims[0].dataset else "the dataset"
             output_text = f"""Based on the paper and claims for {', '.join(claims_list[:3])}, I recommend the following reproduction plan:
 
 {tool_result_summary}
 
-The plan should use the first claim's dataset with a simple baseline model suitable for CPU execution within 20 minutes. Training configuration should use standard hyperparameters (batch_size=32, learning_rate=0.001, epochs=5). The goal is to reproduce the reported metric as closely as possible given compute constraints."""
+The plan should use {first_dataset} with a simple baseline model suitable for CPU execution within 20 minutes. Training configuration should use standard hyperparameters (batch_size=32, learning_rate=0.001, epochs=5). The goal is to reproduce the reported metric as closely as possible given compute constraints."""
 
             logger.info(
                 "planner.synthesized_prose paper_id=%s length=%d",

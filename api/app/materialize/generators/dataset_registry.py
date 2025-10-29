@@ -72,12 +72,13 @@ def normalize_dataset_name(name: str) -> str:
     - Case differences: "SST-2" vs "sst2"
     - Hyphens/underscores: "sst-2" vs "sst_2" vs "sst2"
     - Whitespace: " SST-2 " vs "sst2"
+    - Apostrophes: "AG's News" vs "AG News"
 
     Args:
         name: Raw dataset name from plan or user input
 
     Returns:
-        Normalized lowercase string with no hyphens/underscores/whitespace
+        Normalized lowercase string with no hyphens/underscores/whitespace/apostrophes
 
     Examples:
         >>> normalize_dataset_name("SST-2")
@@ -86,8 +87,13 @@ def normalize_dataset_name(name: str) -> str:
         'fashionmnist'
         >>> normalize_dataset_name("ag_news")
         'agnews'
+        >>> normalize_dataset_name("AG's News")
+        'agnews'
     """
-    return name.lower().strip().replace("-", "").replace("_", "").replace(" ", "")
+    # Strip possessive forms first (before other punctuation removal)
+    # This ensures "AG's News" → "AG News" → "agnews" (not "ag'snews" → "agsnews")
+    cleaned = name.replace("'s", "").replace("'s", "")  # Handle both straight and curly apostrophes
+    return cleaned.lower().strip().replace("-", "").replace("_", "").replace(" ", "").replace("'", "")
 
 
 # Registry: Map normalized names → metadata

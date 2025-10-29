@@ -405,7 +405,7 @@ class TestSanitizePlan:
 
         # Should add defaults
         assert "metrics" in sanitized
-        assert "accuracy" in sanitized["metrics"]
+        assert sanitized["metrics"][0]["name"] == "accuracy"
         assert "visualizations" in sanitized
         assert "training_curve" in sanitized["visualizations"]
         assert sanitized["estimated_runtime_minutes"] == 20

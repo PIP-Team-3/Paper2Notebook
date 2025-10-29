@@ -50,6 +50,26 @@ class TestNormalization:
         assert normalize_dataset_name(" SST-2 ") == "sst2"
         assert normalize_dataset_name("Fashion_MNIST") == "fashionmnist"
 
+    def test_normalize_possessive(self):
+        """Possessive forms ('s) should be stripped correctly."""
+        # Critical test: AG's News → agnews (not agsnews)
+        assert normalize_dataset_name("AG's News") == "agnews"
+        assert normalize_dataset_name("ag's news") == "agnews"
+
+        # Test with curly apostrophe (Unicode U+2019)
+        assert normalize_dataset_name("AG's News") == "agnews"
+
+        # Test possessive with other variations
+        assert normalize_dataset_name("AG's News Dataset") == "agnewsdataset"
+        assert normalize_dataset_name("McDonald's Corpus") == "mcdonaldcorpus"
+
+    def test_normalize_possessive_without_space(self):
+        """Possessive forms should be stripped even without spaces."""
+        # "children'sbooks" → strip "'s" → "childrenbooks"
+        assert normalize_dataset_name("children'sbooks") == "childrenbooks"
+        # "bob's data" → strip "'s" → "bob data" → "bobdata"
+        assert normalize_dataset_name("bob's data") == "bobdata"
+
 
 class TestLookupExactMatch:
     """Test exact match lookups in registry."""
@@ -93,6 +113,25 @@ class TestLookupExactMatch:
         assert meta.source == DatasetSource.HUGGINGFACE
         assert meta.hf_path == ("imdb",)
         assert meta.supports_streaming is True
+
+    def test_lookup_agnews(self):
+        """AG News should be found with various formats."""
+        # Direct lookup
+        meta = lookup_dataset("agnews")
+        assert meta is not None
+        assert meta.source == DatasetSource.HUGGINGFACE
+        assert meta.hf_path == ("ag_news",)
+        assert meta.supports_streaming is True
+
+        # Possessive form (critical for CharCNN paper)
+        meta_possessive = lookup_dataset("AG's News")
+        assert meta_possessive is not None
+        assert meta_possessive.hf_path == ("ag_news",)
+
+        # Alias forms
+        meta_alias = lookup_dataset("ag_news")
+        assert meta_alias is not None
+        assert meta_alias.hf_path == ("ag_news",)
 
 
 class TestLookupAliases:

@@ -43,6 +43,9 @@ BLOCKED_DATASETS = {
     "yfcc100m",
 }
 
+# Common postfix terms to strip from dataset names before normalization
+DATASET_POSTFIX_TERMS = {"dataset", "corpus", "benchmark", "collection", "data"}
+
 
 def coerce_value(value: Any) -> Any:
     """
@@ -128,6 +131,33 @@ def prune_dict(data: Dict[str, Any], allowed_keys: Set[str]) -> Dict[str, Any]:
     return pruned
 
 
+def strip_dataset_postfix(name: str) -> str:
+    """
+    Strip common descriptive postfix terms from dataset names.
+
+    Handles cases where the planner adds elaboration like "AG News corpus"
+    or "CIFAR-10 dataset" which should be normalized to just "AG News" or "CIFAR-10".
+
+    Args:
+        name: Raw dataset name that may include postfix terms
+
+    Returns:
+        Dataset name with postfix terms removed
+
+    Examples:
+        >>> strip_dataset_postfix("AG News corpus")
+        'AG News'
+        >>> strip_dataset_postfix("CIFAR-10 dataset")
+        'CIFAR-10'
+        >>> strip_dataset_postfix("SST-2")
+        'SST-2'
+    """
+    words = name.lower().split()
+    if words and words[-1] in DATASET_POSTFIX_TERMS:
+        return " ".join(name.split()[:-1])  # Preserve original casing
+    return name
+
+
 def is_dataset_allowed(name: str, registry: Dict[str, DatasetMetadata]) -> bool:
     """
     Check if dataset is in registry and not blocked.
@@ -147,14 +177,16 @@ def is_dataset_allowed(name: str, registry: Dict[str, DatasetMetadata]) -> bool:
         >>> is_dataset_allowed("unknown_dataset", DATASET_REGISTRY)
         False
     """
-    normalized = normalize_dataset_name(name)
+    # Strip postfix before normalization
+    cleaned_name = strip_dataset_postfix(name)
+    normalized = normalize_dataset_name(cleaned_name)
 
     # Check if blocked
     if normalized in BLOCKED_DATASETS:
         return False
 
     # Check if in registry
-    meta = lookup_dataset(name)
+    meta = lookup_dataset(cleaned_name)
     return meta is not None
 
 
@@ -162,7 +194,10 @@ def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Opt
     """
     Resolve dataset name to canonical registry ID.
 
-    Handles aliases and normalization (e.g., "SST-2" → "sst2", "glue/sst2" → "sst2").
+    Handles aliases, normalization, and postfix stripping:
+    - "SST-2" → "sst2"
+    - "glue/sst2" → "sst2"
+    - "AG's News corpus" → "agnews"
 
     Args:
         name: Raw dataset name from plan
@@ -178,8 +213,12 @@ def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Opt
         'sst2'
         >>> resolve_dataset_name("ImageNet", DATASET_REGISTRY)
         None
+        >>> resolve_dataset_name("AG's News corpus", DATASET_REGISTRY)
+        'agnews'
     """
-    normalized = normalize_dataset_name(name)
+    # Strip postfix terms first (e.g., "AG News corpus" → "AG News")
+    cleaned_name = strip_dataset_postfix(name)
+    normalized = normalize_dataset_name(cleaned_name)
 
     # Blocked datasets return None
     if normalized in BLOCKED_DATASETS:
@@ -187,9 +226,9 @@ def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Opt
         return None
 
     # Lookup in registry (handles aliases)
-    meta = lookup_dataset(name)
+    meta = lookup_dataset(cleaned_name)
     if meta is None:
-        logger.warning(f"sanitizer.dataset.unknown name={name} normalized={normalized}")
+        logger.warning(f"sanitizer.dataset.unknown name={name} cleaned={cleaned_name} normalized={normalized}")
         return None
 
     # Find canonical name by reverse-lookup
@@ -346,6 +385,21 @@ def sanitize_plan(
             "No allowed datasets in plan after sanitization. "
             "Add datasets to registry or adjust planner to use covered datasets."
         )
+
+    # Step 3.5: Config constraint enforcement (epochs clamping)
+    # Cap epochs at 20 to stay within 20-minute CPU budget policy
+    if "config" in pruned and isinstance(pruned["config"], dict):
+        config = pruned["config"]
+        if "epochs" in config:
+            try:
+                epochs = int(config["epochs"])
+                if epochs > 20:
+                    warnings.append(f"Epochs capped at 20 (planner requested {epochs})")
+                    config["epochs"] = 20
+                    logger.info(f"sanitizer.config.epochs_capped original={epochs} capped=20")
+            except (ValueError, TypeError):
+                # epochs isn't a valid int, leave it for schema validation to catch
+                pass
 
     # Step 4: Justifications fixup
     # Ensure justifications is a dict with {dataset, model, config} keys
