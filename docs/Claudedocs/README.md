@@ -1,198 +1,199 @@
-# Claudedocs - P2N Documentation Archive
-> **Heads-up (2025-10-19):** The authoritative docs now live under
-> `docs/current/`. Treat everything in `docs/Claudedocs/` as historical context
-> and cross-check `../current/README.md` before relying on details here.
-**Purpose:** Context documents for Claude Code sessions
-**Last Organized:** 2025-10-07
+# Claudedocs - Documentation for AI Assistant Context
+
+> **Important (2025-10-29):**
+> - **Active work**: See `Current_Active/` folder (current sprint, daily tasks)
+> - **Stable reference**: See `Current_Reference/` folder (project overview, seed papers)
+> - **Authoritative docs**: See `../current/` for formal documentation (status, changelog, milestones)
+> - **Historical context**: All other folders contain archived sessions and logs
+
+**Purpose**: Documentation optimized for Claude (AI assistant) to quickly load context
+**Last Organized**: 2025-10-29
 
 ---
 
 ## 📂 Folder Structure
 
-### **Root Level - Start Here**
-- **[CURRENT_STATUS__2025-10-07.md](CURRENT_STATUS__2025-10-07.md)** ⭐ **READ FIRST**
-  - Complete system status as of Session 4
-  - What's working, what's not, how to test
-  - Database schema, models, configuration
-  - Quick start guide for new sessions
+### 🚀 **Current_Active/** - ⭐ START HERE ⭐
+**What**: Active sprint documents, daily task tracking, immediate next steps
 
-- **[ROADMAP__Future_Work.md](ROADMAP__Future_Work.md)** 🚀 **NEXT STEPS**
-  - Immediate priorities (integration, testing)
-  - Near-term features (sandbox executor, gap analysis)
-  - Long-term vision (multi-tenancy, web UI)
-  - Proposed future prompts (C-RUN-01, C-REPORT-01, etc.)
+**Key Files**:
+- **`CURRENT_WORK_TRACKER.md`** - **READ FIRST** - Daily status, today's tasks, blockers
+- **`MVP_SPRINT__3_BENCHMARK_PAPERS.md`** - Active sprint: End-to-end pipeline demo
+- `MVP_DEMO_SCRIPT.md` - Demo walkthrough (created Day 3)
+- `MVP_TROUBLESHOOTING.md` - Known issues and fixes (created Day 3)
 
----
+**Update Frequency**: Daily during active sprint
 
-### **Current_Reference/**
-Active documentation used across sessions:
+**Purpose**: Answer "What are we working on RIGHT NOW?"
 
-- **`openai-agents-and-responses-docs-compiled.md`**
-  - OpenAI Responses API reference
-  - SDK 1.109.1 event types and structures
-  - Critical for debugging streaming issues
+### 📚 **Current_Reference/** - Quick Reference
+**What**: Stable reference docs that don't change frequently
 
----
+**Key Files**:
+- **`CLAUDE.md`** - High-level P2N project overview
+- **`SEED_PAPERS_SUMMARY.md`** - Catalog of 11 ingested papers with metadata
+- **`INGEST_GUIDE.md`** - Instructions for ingesting new papers
+- `openai-agents-and-responses-docs-compiled.md` - OpenAI SDK reference
 
-### **Archive_Completed_Sessions/**
-Successful debugging sessions (for historical reference):
+**Update Frequency**: After major milestones
 
-- **`REHYDRATION__2025-10-06_Model_Config_and_Message_Type_Fix.md`** (Session 2)
-  - Fixed Responses API input structure bug
-  - Fixed File Search tool structure
-  - Added role-specific model configuration
-  - **Key Fixes:** Message type wrapper, flat `vector_store_ids`
+**Purpose**: Answer "What papers/datasets do we have?" and "How does the system work?"
 
-- **`REHYDRATION__2025-10-07_Event_Type_Debug_Session.md`** (Session 3)
-  - Fixed SDK event type names (underscores vs. dots)
-  - Fixed event attribute access (`event.delta` not `event.arguments`)
-  - Fixed error event type (`error` not `response.error`)
-  - **Key Fixes:** `response.function_call_arguments.delta`, attribute access
+### 📖 **Working_Logs/** - Session Transcripts
+**What**: Chronological working session logs (debugging, implementation, verification)
 
-- **`SCHEMA_V1_NUCLEAR__Tracking_Doc.md`**
-  - Schema v1 deployment (2025-10-04)
-  - Full referential integrity, foreign keys, constraints
-  - Team feedback integration
-  - RLS permission fixes
+**Recent Files**:
+- `2025-10-10_Phase2_Verification_and_Storage_Fix.md`
+- `2025-10-08_Two_Stage_Planner_Live_Testing.md`
+- `2025-10-08_Two_Stage_Planner_Implementation.md`
+- `2025-10-08_Phase1_Verification_Session.md`
+- And more...
+
+**Purpose**: Audit trail of decisions, debugging sessions, implementation details
+
+**Update Frequency**: After each significant working session (2+ hours)
 
 ---
 
-### **Archive_Pre_Message_Type_Fix/**
-State before Session 2 fixes (2025-10-06):
+### ✅ **Archive_Completed_Sessions/** - Completed Milestones
+**What**: Major milestones that are done and archived
 
-- `ROADMAP_COMPAT__Responses_Agents_v1091.md`
-- `PROMPTS__Claude_Master_Pack_PostPlannerFix.md`
-- `PLAYBOOK__Manual_EndToEnd_AfterPlannerFix.md`
-- `SESSION_SUMMARY__Planner_Fix_Complete.md`
-- `CRITICAL_ISSUE__Zombie_Servers.md`
-- `CRITICAL_POSTGREST_CACHE_ISSUE.md`
-- `CONTEXT_REHYDRATION__Fresh_Start.md`
+**Files**:
+- `P2N_MILESTONE_UPDATE__2025-10-16.md` - Seed papers ingested, Phase 2 complete
+- `P2N_Roadmap_Next_Milestones_2025-10-10.md` - Post-Phase-2 planning
+- `SCHEMA_V1_NUCLEAR__Tracking_Doc.md` - Schema v1 deployment
+- And more...
 
-**Why Archived:** These docs describe issues **before** the Message Type fix. Reference only if investigating historical context.
+**Purpose**: Historical record of completed work
 
----
-
-### **Archive_Pre_Event_Type_Fix/**
-State before Session 3 fixes (2025-10-07):
-
-- `PROJECT_STATUS__Comprehensive_Overview.md`
-- `ROADMAP_Claude_Drift.md`
-
-**Why Archived:** Pre-dates the event type name fixes. Superseded by Session 3 rehydration doc.
+**Update Frequency**: When milestones are achieved
 
 ---
 
-### **Archive_Obsolete/**
-Documents no longer relevant:
+### 🗄️ **Archive_Pre_*/** and **Archive_Obsolete/** - Historical Context
+**What**: Snapshots before major refactors, deprecated docs
 
-- **`DB_UPGRADE_PLAN__v1_FKs_RLS.md`**
-  - **Status:** Superseded by deployed `schema_v1_nuclear_with_grants.sql`
-  - **Why Obsolete:** Schema v1 already deployed (2025-10-04)
+**Folders**:
+- `Archive_Pre_Event_Type_Fix/` - Pre-SDK event type fixes
+- `Archive_Pre_Message_Type_Fix/` - Pre-message type refactor
+- `Archive_Obsolete/` - Deprecated plans and audits
 
-- **`DOCUMENTATION_AUDIT__2025-10-06.md`**
-  - **Status:** Historical audit of docs folder
-  - **Why Obsolete:** Folder reorganized on 2025-10-07 (this session)
+**Purpose**: Recovery points if needed, historical lessons learned
 
----
-
-### **New/**
-Older roadmaps and playbooks (may need review):
-
-- `ROADMAP.md` - Early roadmap (may be outdated)
-- `PLAYBOOK.md` - Manual testing procedures
-- `PLAYBOOK_Verification.md` - Verification steps
-- `papers_to_ingest.md` - List of papers for testing
-- `claude_promptops.md` - Prompt engineering notes
-
-**Status:** Not yet reviewed in Session 4 reorganization. May contain useful historical context or be superseded by newer docs.
+**Update Frequency**: Before major breaking changes
 
 ---
 
-## 🔍 How to Use This Archive
+### 🌱 **SeedSetup/** - Paper Ingestion Resources
+**What**: Resources for ingesting seed papers
 
-### **Starting a New Session?**
-1. Read **`CURRENT_STATUS__2025-10-07.md`** for system state
-2. Check **`ROADMAP__Future_Work.md`** for next priorities
-3. Reference **`Current_Reference/openai-agents-and-responses-docs-compiled.md`** for SDK details
+**Files**:
+- `manifests_seed_papers.csv` - Metadata for 15 seed papers
+- `INGEST_GUIDE.md` - Step-by-step ingestion instructions
 
-### **Debugging an Issue?**
-1. Check if similar issue was fixed in **`Archive_Completed_Sessions/`**
-2. Use completed session docs to understand past solutions
-3. Reference SDK docs in **`Current_Reference/`**
+**Purpose**: Reference when adding new papers to the system
 
-### **Understanding Historical Context?**
-1. **Pre-Message-Type:** See `Archive_Pre_Message_Type_Fix/`
-2. **Pre-Event-Type:** See `Archive_Pre_Event_Type_Fix/`
-3. **Obsolete Plans:** See `Archive_Obsolete/`
+**Update Frequency**: When new papers are added
 
 ---
 
-## 📊 Session Timeline
+## 🎯 Quick Navigation Guide
 
-| Session | Date | Focus | Key Fixes | Doc |
-|---------|------|-------|-----------|-----|
-| Session 1 | 2025-10-04 | Schema deployment | Pydantic schema, tool definition | (not rehydrated) |
-| Session 2 | 2025-10-06 | Message type fix | Input structure, File Search tool | `REHYDRATION__2025-10-06_...` |
-| Session 3 | 2025-10-07 | Event type debug | Event names, attribute access | `REHYDRATION__2025-10-07_...` |
-| Session 4 | 2025-10-07 | File Search fix | tool_choice, prompt workflow, max_tokens | `CURRENT_STATUS__2025-10-07.md` |
+### "I'm starting a new session" 🆕
+→ Read **`Current_Active/CURRENT_WORK_TRACKER.md`** first
+→ Then read **`Current_Active/MVP_SPRINT__3_BENCHMARK_PAPERS.md`** for detailed plan
 
----
+### "What are we working on right now?" 🎯
+→ Check **`Current_Active/CURRENT_WORK_TRACKER.md`** → Today's tasks section
 
-## 🗂️ Document Naming Convention
+### "What's the project about?" 📖
+→ Read **`Current_Reference/CLAUDE.md`** for high-level overview
+→ Read **`docs/current/status_overview.md`** for formal status
 
-**Active Docs:**
-- `CURRENT_STATUS__YYYY-MM-DD.md` - System state snapshot
-- `ROADMAP__*.md` - Future plans
+### "What papers/datasets are available?" 📊
+→ Check **`Current_Reference/SEED_PAPERS_SUMMARY.md`**
 
-**Session Rehydration:**
-- `REHYDRATION__YYYY-MM-DD_ShortDescription.md`
+### "How did we get here?" 🕰️
+→ Skim **`Working_Logs/`** in reverse chronological order
+→ Check **`Archive_Completed_Sessions/`** for major milestones
 
-**Tracking Docs:**
-- `SCHEMA_V1_NUCLEAR__Tracking_Doc.md`
-- `DOCUMENTATION_AUDIT__YYYY-MM-DD.md`
-
-**Archive Folders:**
-- `Archive_Pre_{FixName}/` - State before major fix
-- `Archive_Completed_Sessions/` - Successful debugging sessions
-- `Archive_Obsolete/` - No longer relevant
+### "Something broke - how was it fixed before?" 🔧
+→ Search **`Working_Logs/`** and **`Archive_Completed_Sessions/`** for similar issues
 
 ---
 
-## ✅ Organization Principles
+## 📝 Documentation Guidelines
 
-1. **Start with current state** - Always update `CURRENT_STATUS` first
-2. **Archive completed work** - Move session docs to `Archive_Completed_Sessions/` when fixed
-3. **Mark obsolete clearly** - Move superseded docs to `Archive_Obsolete/`
-4. **Preserve history** - Never delete, only archive
-5. **Update this README** - When adding new folders or major docs
+### When to Create/Update Docs
+
+**Daily** (during active sprint):
+- Update `Current_Active/CURRENT_WORK_TRACKER.md` with progress
+- Log blockers and completed tasks
+
+**Per Sprint**:
+- Create new sprint plan in `Current_Active/`
+- Archive completed sprint to `Archive_Completed_Sessions/`
+
+**Per Session** (2+ hour working session):
+- Create session log in `Working_Logs/YYYY-MM-DD_Description.md`
+- Document decisions, bugs fixed, insights gained
+
+**Per Milestone**:
+- Archive milestone doc to `Archive_Completed_Sessions/`
+- Update `docs/current/` formal documentation
+- Update this README if folder structure changes
+
+### Naming Conventions
+
+- **Date Prefix**: `YYYY-MM-DD_` for chronological docs
+- **Status Prefix**: `CURRENT_`, `ACTIVE_`, `MVP_` for active docs
+- **ALL_CAPS**: Important tracker/index docs
+- **Underscores**: Separate words in filenames
 
 ---
 
-## 🧹 Maintenance Guidelines
+## 🔄 Maintenance Checklist
 
-### **When to Archive a Session Doc:**
-- Issue is fully resolved
-- Fixes are deployed and tested
-- Session is referenced in newer `CURRENT_STATUS`
+### Daily (During Sprint)
+- [ ] Update `Current_Active/CURRENT_WORK_TRACKER.md`
+- [ ] Log completed tasks
+- [ ] Note any blockers
 
-### **When to Mark Obsolete:**
-- Plan is superseded by deployment
-- Schema is replaced by newer version
-- Roadmap is replaced by newer roadmap
+### Weekly
+- [ ] Archive completed sprint docs
+- [ ] Review and clean obsolete docs
+- [ ] Update this README if needed
 
-### **When to Update CURRENT_STATUS:**
-- Major feature completed
-- System state changes significantly
-- New session concludes with successful fixes
+### Monthly
+- [ ] Audit folder structure
+- [ ] Move old working logs to archive folders
+- [ ] Update navigation guide
 
 ---
 
-## 📝 Quick Reference
+## 🤖 Tips for AI Assistants
 
-**Latest Status:** [CURRENT_STATUS__2025-10-07.md](CURRENT_STATUS__2025-10-07.md)
-**Next Steps:** [ROADMAP__Future_Work.md](ROADMAP__Future_Work.md)
-**SDK Docs:** [Current_Reference/openai-agents-and-responses-docs-compiled.md](Current_Reference/openai-agents-and-responses-docs-compiled.md)
+**When starting a new conversation**:
+1. Read `Current_Active/CURRENT_WORK_TRACKER.md` first
+2. Check active sprint doc for detailed context
+3. Skim recent `Working_Logs/` for recent changes
+4. Use `Current_Reference/` for stable project facts
 
-**Last Session:** Session 4 (File Search fix) - 2025-10-07
-**Last Organizer:** Claude Code (Session 4)
-**Next Review:** When Session 5 begins
+**When ending a conversation**:
+1. Update `Current_Active/CURRENT_WORK_TRACKER.md` with progress
+2. Create new working log if session was significant (2+ hours)
+3. Archive completed docs if milestone reached
+
+---
+
+## 📞 Questions?
+
+- **About this folder**: See this README
+- **About the project**: See `Current_Reference/CLAUDE.md`
+- **About formal docs**: See `../current/README.md`
+
+---
+
+**Last Updated**: 2025-10-29
+**Active Sprint**: MVP - 3 Benchmark Papers
+**Current Focus**: End-to-end pipeline validation
