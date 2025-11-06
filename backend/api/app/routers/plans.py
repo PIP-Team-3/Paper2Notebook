@@ -881,6 +881,29 @@ async def materialize_plan_assets(
         with traced_subspan(span, "p2n.materialize.codegen"):
             notebook_bytes = build_notebook_bytes(plan, plan_id)
             requirements_text, env_hash = build_requirements(plan)
+
+        # Validate notebook before persisting
+        with traced_subspan(span, "p2n.materialize.validate"):
+            from app.materialize.validation import NotebookValidator
+            validator = NotebookValidator()
+            validation_result = validator.validate(notebook_bytes)
+
+            if not validation_result.valid:
+                logger.error(
+                    "plan.materialize.validation_failed plan_id=%s errors=%s",
+                    plan_id,
+                    validation_result.errors
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail={
+                        "code": "NOTEBOOK_VALIDATION_FAILED",
+                        "message": "Generated notebook failed validation checks",
+                        "errors": validation_result.errors,
+                        "remediation": "Check generator code for bugs. Common issues: missing imports, invalid sklearn parameters, syntax errors"
+                    }
+                )
+
         with traced_subspan(span, "p2n.materialize.persist"):
             # Store in plans bucket (separate from papers bucket)
             plans_storage.store_text(notebook_key, notebook_bytes.decode("utf-8"), "text/plain")

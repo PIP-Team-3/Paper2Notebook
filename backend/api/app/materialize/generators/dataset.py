@@ -334,7 +334,7 @@ class HuggingFaceDatasetGenerator(CodeGenerator):
 
         # Vectorize text (bag-of-words for sklearn compatibility)
         MAX_FEATURES = int(os.getenv("MAX_BOW_FEATURES", "1000"))
-        vectorizer = CountVectorizer(max_features=MAX_FEATURES, random_state=SEED)
+        vectorizer = CountVectorizer(max_features=MAX_FEATURES)
         X = vectorizer.fit_transform(texts).toarray()
         y = np.array(labels)
 

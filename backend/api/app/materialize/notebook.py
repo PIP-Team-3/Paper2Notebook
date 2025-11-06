@@ -25,14 +25,28 @@ def _primary_metric(plan: PlanDocumentV11) -> str:
 
 
 def build_requirements(plan: PlanDocumentV11) -> Tuple[str, str]:
+    """
+    Build requirements.txt content from plan using generator requirements.
+
+    Collects requirements from:
+    1. DEFAULT_REQUIREMENTS (base dependencies)
+    2. Dataset generator requirements
+    3. Model generator requirements
+
+    Returns:
+        Tuple of (requirements_text, env_hash)
+    """
     requirements = set(DEFAULT_REQUIREMENTS)
 
-    framework = plan.config.framework.lower()
-    model_name = plan.model.name.lower()
-    if "torch" in framework or "torch" in model_name:
-        requirements.update({"torch==2.2.2", "torchvision==0.17.2"})
-    if "datasets" in framework or "huggingface" in plan.dataset.name.lower():
-        requirements.add("datasets==2.19.0")
+    # Get generators and collect their requirements
+    dataset_gen = GeneratorFactory.get_dataset_generator(plan)
+    model_gen = GeneratorFactory.get_model_generator(plan)
+
+    dataset_reqs = dataset_gen.generate_requirements(plan)
+    model_reqs = model_gen.generate_requirements(plan)
+
+    requirements.update(dataset_reqs)
+    requirements.update(model_reqs)
 
     sorted_lines = sorted(requirements)
     requirements_text = "\n".join(sorted_lines) + "\n"
@@ -51,9 +65,14 @@ def build_notebook_bytes(plan: PlanDocumentV11, plan_id: str) -> bytes:
     Future Phases: Factory will intelligently select generators based on
                    plan.dataset.name, plan.model.name, and plan.config.framework.
     """
-    # Get code generators via factory (Phase 1: always synthetic + logistic)
+    # Get code generators via factory (Phase 2: smart dataset selection)
     dataset_gen = GeneratorFactory.get_dataset_generator(plan)
     model_gen = GeneratorFactory.get_model_generator(plan)
+
+    # Collect imports from generators
+    dataset_imports = dataset_gen.generate_imports(plan)
+    model_imports = model_gen.generate_imports(plan)
+    all_imports = sorted(set(dataset_imports + model_imports))
 
     # Generate dataset and model code sections
     dataset_code = dataset_gen.generate_code(plan)
@@ -72,63 +91,63 @@ def build_notebook_bytes(plan: PlanDocumentV11, plan_id: str) -> bytes:
         ).strip()
     )
 
-    # Setup cell (unchanged - still needed for all notebooks)
-    setup_code = textwrap.dedent(
-        f"""
-        import json
-        import os
-        import random
-        import sys
-        from pathlib import Path
+    # Setup cell with base imports
+    setup_code = f"""import json
+import os
+import random
+import sys
+from pathlib import Path
 
-        import numpy as np
+import numpy as np
 
-        try:
-            import torch
-            TORCH_AVAILABLE = True
-        except ImportError:
-            TORCH_AVAILABLE = False
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
-        EVENTS_PATH = Path("events.jsonl")
-        METRICS_PATH = Path("metrics.json")
+EVENTS_PATH = Path("events.jsonl")
+METRICS_PATH = Path("metrics.json")
 
-        if EVENTS_PATH.exists():
-            EVENTS_PATH.unlink()
-        if METRICS_PATH.exists():
-            METRICS_PATH.unlink()
+if EVENTS_PATH.exists():
+    EVENTS_PATH.unlink()
+if METRICS_PATH.exists():
+    METRICS_PATH.unlink()
 
-        def log_event(event_type: str, payload: dict) -> None:
-            EVENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with EVENTS_PATH.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps({{"event": event_type, **payload}}) + "\n")
+def log_event(event_type: str, payload: dict) -> None:
+    EVENTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with EVENTS_PATH.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps({{"event": event_type, **payload}}) + "\\n")
 
-        def seed_everything(seed: int) -> None:
-            random.seed(seed)
-            np.random.seed(seed)
-            if TORCH_AVAILABLE:
-                torch.manual_seed(seed)
-                if torch.cuda.is_available():
-                    raise RuntimeError("E_GPU_REQUESTED: CUDA devices are not permitted during runs")
-                torch.backends.cudnn.deterministic = True
-                torch.backends.cudnn.benchmark = False
+def seed_everything(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    if TORCH_AVAILABLE:
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            raise RuntimeError("E_GPU_REQUESTED: CUDA devices are not permitted during runs")
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
-        SEED = {plan.config.seed}
-        seed_everything(SEED)
-        log_event("stage_update", {{"stage": "seed_check", "seed": SEED}})
-        print("Notebook generated for Plan {plan_id}")
-        print("Python version:", sys.version)
-        print("Seed set to", SEED)
-        if TORCH_AVAILABLE:
-            print("Torch version:", torch.__version__)
-        else:
-            print("Torch not installed (not required for this plan)")
-        """
-    ).strip()
+SEED = {plan.config.seed}
+seed_everything(SEED)
+log_event("stage_update", {{"stage": "seed_check", "seed": SEED}})
+print("Notebook generated for Plan {plan_id}")
+print("Python version:", sys.version)
+print("Seed set to", SEED)
+if TORCH_AVAILABLE:
+    print("Torch version:", torch.__version__)
+else:
+    print("Torch not installed (not required for this plan)")"""
+
+    # Generator-specific imports cell
+    imports_code = "\n".join(all_imports) if all_imports else "# No additional imports needed"
 
     # Assemble notebook cells
     cells = [
         intro,
         new_code_cell(setup_code),
+        new_code_cell(imports_code),
         new_code_cell(dataset_code),
         new_code_cell(model_code),
     ]
