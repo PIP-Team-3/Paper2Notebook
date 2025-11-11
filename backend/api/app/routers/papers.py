@@ -138,6 +138,7 @@ async def ingest_paper(
     storage=Depends(get_supabase_storage),
     file_search: FileSearchService = Depends(get_file_search_service),
 ):
+
     settings = get_settings()
     fallback_created_by: Optional[str] = (
         settings.p2n_dev_user_id if is_valid_uuid(settings.p2n_dev_user_id) else None

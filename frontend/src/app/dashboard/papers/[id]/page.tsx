@@ -118,7 +118,11 @@ export default async function PaperPage({
 
 					{/* Stepper Section */}
 					<div className="mt-8 border-t pt-6">
-						<PaperStepper currentStage={paper.stage} status={paper.status} />
+						<PaperStepper
+							currentStage={paper.stage}
+							status={paper.status}
+							paperId={paper.id}
+						/>
 					</div>
 				</div>
 			</>

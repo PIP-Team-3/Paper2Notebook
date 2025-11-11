@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from ..config.llm import traced_run, traced_subspan
 from ..data.models import RunCreate, RunEventCreate
 from ..data.supabase import SupabaseDatabase
-from ..dependencies import get_supabase_db, get_supabase_storage
+from ..dependencies import get_supabase_db, get_supabase_storage, get_supabase_plans_storage
 from ..run.runner_local import GPURequestedError, NotebookExecutionError, NotebookRunResult, execute_notebook
 from ..runs import run_stream_manager
 from ..schemas.events import validate_event
@@ -20,7 +20,7 @@ from ..schemas.plan_v1_1 import PlanDocumentV11
 
 logger = logging.getLogger(__name__)
 
-RUN_STATUS_PENDING = "pending"
+RUN_STATUS_PENDING = "queued"
 RUN_STATUS_RUNNING = "running"
 RUN_STATUS_COMPLETED = "succeeded"
 RUN_STATUS_FAILED = "failed"
@@ -115,7 +115,8 @@ async def _run_plan(
     if plan_document.config and hasattr(plan_document.config, "seed"):
         seed = plan_document.config.seed or 42
 
-    notebook_key = f"plans/{plan_record.id}/notebook.ipynb"
+    notebook_key = f"{plan_record.id}/notebook.ipynb"
+    requirements_key = f"{plan_record.id}/requirements.txt"
 
     with traced_run("p2n.run.exec") as span:
         started_at = datetime.now(timezone.utc)
@@ -134,10 +135,12 @@ async def _run_plan(
         try:
             with traced_subspan(span, "p2n.run.nbclient.start"):
                 notebook_bytes = storage.download(notebook_key)
+                requirements_bytes = storage.download(requirements_key)
 
             with traced_subspan(span, "p2n.run.nbclient.finish"):
                 result = await execute_notebook(
                     notebook_bytes=notebook_bytes,
+                    requirements_bytes=requirements_bytes,
                     emit=_emit,
                     timeout_minutes=timeout_minutes,
                     seed=seed,
@@ -224,7 +227,7 @@ async def _run_plan(
 async def start_run(
     plan_id: str,
     db: SupabaseDatabase = Depends(get_supabase_db),
-    storage=Depends(get_supabase_storage),
+    storage=Depends(get_supabase_plans_storage),  # Use plans bucket for artifacts
 ):
     plan_record = db.get_plan(plan_id)
     if not plan_record:

@@ -98,3 +98,5 @@ scripts/
 # API
 .env
 venv/
+
+backend/data/cache

@@ -17,6 +17,7 @@ DEFAULT_REQUIREMENTS: List[str] = [
     "scikit-learn==1.5.1",
     "pandas==2.2.2",
     "matplotlib==3.9.0",
+    "jupyter==1.1.1"
 ]
 
 

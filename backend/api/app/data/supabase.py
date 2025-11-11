@@ -266,14 +266,14 @@ class SupabaseDatabase:
         response = (
             self._client.table("runs")
             .insert(data)
-            .select("*")
-            .single()
             .execute()
         )
-        record = getattr(response, "data", None)
-        if not record:
+        result = getattr(response, "data", None)
+        if isinstance(result, list):
+            result = result[0] if result else None
+        if not result:
             raise RuntimeError("Failed to insert run record")
-        return RunRecord.model_validate(record)
+        return RunRecord.model_validate(result)
 
     def update_run(
         self,
@@ -299,14 +299,14 @@ class SupabaseDatabase:
             self._client.table("runs")
             .update(update_payload)
             .eq("id", run_id)
-            .select("*")
-            .single()
             .execute()
         )
-        record = getattr(response, "data", None)
-        if not record:
+        result = getattr(response, "data", None)
+        if isinstance(result, list):
+            result = result[0] if result else None
+        if not result:
             raise RuntimeError("Failed to update run record")
-        return RunRecord.model_validate(record)
+        return RunRecord.model_validate(result)
 
     def get_run(self, run_id: str) -> Optional[RunRecord]:
         response = (

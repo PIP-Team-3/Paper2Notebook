@@ -3,9 +3,10 @@ import { z } from 'zod';
 const incomingPaperSchema = z.object({
 	id: z.string(),
 	title: z.string(),
-	created_at: z.iso.datetime({ offset: true }),
+	created_at: z.iso.datetime({ offset: true }).nullable(),
 	status: z.string(),
 	source_url: z.url().nullable().or(z.string('')),
+	stage: z.string().nullable()
 });
 
 export const paperStages = [
@@ -31,9 +32,9 @@ export const paperSchema = incomingPaperSchema.transform((data) => ({
 	createdAt: data.created_at,
 	status: data.status,
 	sourceUrl: data.source_url,
+	stage: data.stage,
 }));
 
 export type PaperSchema = z.infer<typeof paperSchema> & {
-	stage: PaperStage;
 	stats: PaperStats;
 };

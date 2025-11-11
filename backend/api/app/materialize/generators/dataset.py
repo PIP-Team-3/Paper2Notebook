@@ -235,7 +235,6 @@ class TorchvisionDatasetGenerator(CodeGenerator):
         return [
             "torch==2.1.0",
             "torchvision==0.16.0",
-            "numpy==1.26.0",
         ]
 
 
@@ -358,5 +357,4 @@ class HuggingFaceDatasetGenerator(CodeGenerator):
         return [
             "datasets>=2.14.0",
             "scikit-learn==1.5.1",
-            "numpy==1.26.0",
         ]

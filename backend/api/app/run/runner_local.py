@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import random
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -150,6 +151,7 @@ def _flush_notebook_events(events_path: Path, emit: EmitCallable, start_index: i
 
 def _execute_sync(
     notebook_bytes: bytes,
+    requirements_bytes: bytes,
     emit: EmitCallable,
     timeout_seconds: int,
     seed: int = 42,
@@ -167,11 +169,79 @@ def _execute_sync(
         notebook_path = tmp_path / "notebook.ipynb"
         notebook_path.write_bytes(notebook_bytes)
 
+        requirements_path = tmp_path / "requirements.txt"
+        requirements_path.write_bytes(requirements_bytes)
+
+        # Create virtual environment
+        venv_path = tmp_path / "venv"
+        emit("log_line", {"message": "Creating virtual environment..."})
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "venv", str(venv_path)],
+                check=True,
+                capture_output=True,
+                timeout=60,
+            )
+            emit("log_line", {"message": "Virtual environment created successfully"})
+        except subprocess.CalledProcessError as e:
+            emit("log_line", {"message": f"Failed to create venv: {e.stderr.decode()}"})
+            raise NotebookExecutionError(f"Failed to create virtual environment: {e}")
+
+        # Determine the Python executable in the venv
+        if sys.platform == "win32":
+            venv_python = venv_path / "Scripts" / "python.exe"
+        else:
+            venv_python = venv_path / "bin" / "python"
+
+        # Install requirements in the venv
+        emit("log_line", {"message": "Installing requirements..."})
+        try:
+            subprocess.run(
+                [str(venv_python), "-m", "pip", "install", "--upgrade", "pip"],
+                check=True,
+                capture_output=True,
+                timeout=300,
+            )
+            emit("log_line", {"message": "pip upgraded successfully"})
+        except subprocess.CalledProcessError as e:
+            emit("log_line", {"message": f"Failed to upgrade pip: {e.stderr.decode()}"})
+            raise NotebookExecutionError(f"Failed to upgrade pip in venv: {e}")
+
+        # Install requirements from requirements.txt
+        try:
+            subprocess.run(
+                [str(venv_python), "-m", "pip", "install", "-r", str(requirements_path)],
+                check=True,
+                capture_output=True,
+                timeout=600,
+            )
+            emit("log_line", {"message": "Requirements installed successfully"})
+        except subprocess.CalledProcessError as e:
+            emit("log_line", {"message": f"Failed to install requirements: {e.stderr.decode()}"})
+            raise NotebookExecutionError(f"Failed to install requirements in venv: {e}")
+
+        # Register IPython kernel with Jupyter
+        emit("log_line", {"message": "Registering IPython kernel with Jupyter..."})
+        try:
+            subprocess.run(
+                [str(venv_python), "-m", "ipykernel", "install", "--user", "--name", "venv-kernel", "--display-name", "Python (venv)"],
+                check=True,
+                capture_output=True,
+                timeout=120,
+            )
+            emit("log_line", {"message": "IPython kernel registered successfully"})
+        except subprocess.CalledProcessError as e:
+            emit("log_line", {"message": f"Failed to register IPython kernel: {e.stderr.decode()}"})
+            raise NotebookExecutionError(f"Failed to register IPython kernel: {e}")
+
+        # Read notebook and execute in the venv
         nb = nbformat.reads(notebook_bytes.decode("utf-8"), as_version=4)
+
+        # Create NotebookClient using the venv's registered kernel
         client = NotebookClient(
             nb,
             timeout=timeout_seconds,
-            kernel_name="python3",
+            kernel_name="venv-kernel",
             allow_errors=False,
             resources={"metadata": {"path": str(tmp_path)}},
         )
@@ -233,10 +303,11 @@ def _execute_sync(
 
 async def execute_notebook(
     notebook_bytes: bytes,
+    requirements_bytes: bytes,
     emit: EmitCallable,
     timeout_minutes: int,
     seed: int = 42,
 ) -> NotebookRunResult:
     timeout_minutes = max(1, min(timeout_minutes, 25))
     timeout_seconds = timeout_minutes * 60
-    return await asyncio.to_thread(_execute_sync, notebook_bytes, emit, timeout_seconds, seed)
+    return await asyncio.to_thread(_execute_sync, notebook_bytes, requirements_bytes, emit, timeout_seconds, seed)

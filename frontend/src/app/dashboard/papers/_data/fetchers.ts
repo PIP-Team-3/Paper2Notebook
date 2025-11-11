@@ -14,7 +14,6 @@ export async function getPaper(id: string): Promise<PaperSchema> {
 export function mockPaper(paper: z.infer<typeof paperSchema>): PaperSchema {
 	return Object.assign(
 		{
-			stage: paperStages[Math.floor(Math.random() * paperStages.length)],
 			stats: {
 				tokens: Math.floor(Math.random() * 10000 + 10),
 				cost: Math.random() * 50,
@@ -39,6 +38,9 @@ export async function uploadPaper(
 		formData.append('source_url', url);
 	}
 
-	const paperRes = await uploadFileAPI('/papers/', formData);
-	return mockPaper(paperSchema.parse(paperRes));
+	const res = await uploadFileAPI('/papers/', formData);
+
+	const paperRes = await getPaper(res['paper_id']);
+	return paperRes;
 }
+
