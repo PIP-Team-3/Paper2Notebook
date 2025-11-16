@@ -543,6 +543,20 @@ async def stream_run_events(run_id: str):
         },
     )
 
+@app.get("/papers/{paper_id}/claims")
+async def get_claims(paper_id: str):
+    try:
+        result = supabase.table("claims").select("*").eq("paper_id", paper_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database query failed: {e.message}")
+    
+    claims = result.data
+        
+    if not claims:    
+        raise HTTPException(status_code=404, detail=f"Claims for the paper with given id {id} not found")
+
+    return claims
+
 @app.post("/papers/{id}/start")
 def start():
     return f"kick off paper processing for paper: {id}"
