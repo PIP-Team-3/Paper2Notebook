@@ -1,0 +1,78 @@
+{
+  "story": {
+    "pages": [
+      {
+        "id": 1,
+        "stage": "problem",
+        "title": "Maya\u2019s Small Stool, Big Question",
+        "caption": "In her sunny Word Workshop, Maya wants to build a Sentence Sorter that can tell what a sentence means or feels. She wonders: could a tiny, simple setup work as well as a giant, fancy machine?",
+        "visual_prompt": "A cozy wooden workshop with warm light and string lights. Maya, an 8-year-old with curly hair, a yellow hoodie, denim overalls, and red sneakers, stands by a workbench. Beside her is Dot, a tiny silver robot with one blue eye and a happy smile. On the bench: a small blue one-step stool, a neat stack of paper sentence ribbons, and a friendly panel labeled 'decision dial'. Soft labels: 'question', 'reader tool'.",
+        "related_claim": "Can a very simple model on top of pre-taught word codes handle many sentence-sorting jobs without lots of tinkering?"
+      },
+      {
+        "id": 2,
+        "stage": "idea",
+        "title": "Ready-Made Word Cards",
+        "caption": "Maya starts with ready-made word cards that already 'know' a lot about words. If she places a simple pattern finder on top, maybe it can use those cards to understand new sentences fast.",
+        "visual_prompt": "The same workshop. A bright toolbox labeled 'word cards' sits open, showing colorful cards with words. Dot points to a sign that says 'ready-made'. Maya smiles, holding a small tray labeled 'pattern finder'. The decision dial rests nearby. Soft labels: 'ready-made', 'learns'.",
+        "related_claim": "Pre-taught word codes act like strong, general helpers that work well for many tasks."
+      },
+      {
+        "id": 3,
+        "stage": "method",
+        "title": "Rollers and the Best Stamp",
+        "caption": "Maya lays a sentence down like a ribbon. Dot slides three inky rollers\u2014short, medium, and long\u2014over the words to catch useful patterns, and the best stamp wins to light up the decision dial.",
+        "visual_prompt": "Maya and Dot at the bench. A sentence ribbon runs under three ink rollers labeled '3-word', '4-word', '5-word'. Each roller leaves soft stamped shapes; one stamp glows brightest with a tiny tag 'strong clue'. A small wire runs from the stamps to the 'decision dial' with a light that can turn on. Soft labels: 'strong clue', 'best stamp'.",
+        "related_claim": "A simple one-layer pattern finder with a few roller sizes picks the strongest pattern and makes a decision."
+      },
+      {
+        "id": 4,
+        "stage": "exploration",
+        "title": "Frozen vs. Tuned Cards",
+        "caption": "She tries two ways: keep the word cards as-is (frozen), or let them adjust a little for the job (tuned). The tuned cards often help the Sentence Sorter do even better.",
+        "visual_prompt": "Two small decks of colorful cards on the bench: one with a blue band labeled 'frozen', one with a green band labeled 'tuned'. Maya flips a lever between 'frozen' and 'tuned'. Dot slides the rollers over the sentence ribbon toward the decision dial. The tuned path has a tiny sparkle. Soft labels: 'frozen', 'tuned', 'learns'.",
+        "related_claim": "Letting the word cards adjust for the task usually improves results compared with keeping them unchanged."
+      },
+      {
+        "id": 5,
+        "stage": "exploration",
+        "title": "Two-Deck Tryout",
+        "caption": "Next she feeds the pattern finder with both decks at once\u2014one frozen and one tuned. Sometimes this helps, but not every kind of sentence needs both.",
+        "visual_prompt": "The bench now shows two card feeders side by side: one marked 'frozen', one marked 'tuned', both leading into the rollers. A small toggle reads 'two-deck'. Some stamps glow, others look normal, suggesting mixed success. Maya and Dot watch thoughtfully. Soft labels: 'two-deck', 'maybe helps'.",
+        "related_claim": "Using frozen and tuned cards together gives mixed results and doesn\u2019t always beat using just one."
+      },
+      {
+        "id": 6,
+        "stage": "exploration",
+        "title": "Twinkle-Light Training",
+        "caption": "To keep the machine healthy, some practice lights randomly blink off so it doesn\u2019t rely on every single spark. This twinkle trick helps it grow strong and steady.",
+        "visual_prompt": "String lights above the workbench labeled 'learns' are gently blinking; some bulbs are off at random. The rollers and decision dial glow calmly. Dot holds a tiny sign that says 'steady'. Maya gives a thumbs-up. Soft labels: 'learns', 'steady'.",
+        "related_claim": "Randomly hiding a few helper signals during practice is a very helpful habit for this setup."
+      },
+      {
+        "id": 7,
+        "stage": "exploration",
+        "title": "Shelves That Rearrange",
+        "caption": "When the cards are tuned, the workshop shelves quietly rearrange\u2014words that matter for the job move closer together, and even a '!' sticker learns when to shout.",
+        "visual_prompt": "A pegboard wall of small word shelves. Tiny labels shuffle closer: cheerful words near 'good', and a bright '!' sticker gains a glowing edge. Maya adjusts a shelf knob labeled 'tuned'. Dot points to a sticker 'new neighbors'. Soft labels: 'tuned', 'new neighbors'.",
+        "related_claim": "Tuning changes which words sit near each other in useful ways, even teaching symbols to act more helpfully."
+      },
+      {
+        "id": 8,
+        "stage": "result",
+        "title": "Small Stool, High Reach",
+        "caption": "With ready-made word cards and a single row of rollers, Maya\u2019s Sentence Sorter handles many kinds of sentences really well\u2014often as well as fancy, taller machines.",
+        "visual_prompt": "The small blue one-step stool stands proudly by the bench. The decision dial shows a happy glow. Paper ribbons of different colors (for different kinds of sentences) feed in and out smoothly with gold stars above. Dot tosses a confetti of tiny star stickers. Soft labels: 'works well', 'strong'.",
+        "related_claim": "A simple, shallow setup on top of pre-taught word codes can match or beat much fancier machines on many sentence jobs."
+      },
+      {
+        "id": 9,
+        "stage": "ending",
+        "title": "The Workshop Wisdom",
+        "caption": "Maya smiles\u2014start simple. Use good word cards, slide a few smart rollers, pick the best stamp, and keep the lights twinkling during practice. If needed, gently tune the cards; using two decks is optional.",
+        "visual_prompt": "Final cozy scene: Maya and Dot tidy the Word Workshop. The toolbox 'word cards', the three rollers, the glowing 'decision dial', and the small blue stool are all neatly arranged. A banner reads 'start simple'. Soft labels: 'start simple', 'learns'.",
+        "related_claim": "Big takeaway: a small, well-regularized pattern finder with pre-taught word codes is powerful; light tuning helps, and extra complexity isn\u2019t always needed."
+      }
+    ]
+  }
+}
