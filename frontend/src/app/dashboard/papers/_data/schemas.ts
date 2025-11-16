@@ -6,7 +6,7 @@ const incomingPaperSchema = z.object({
 	created_at: z.iso.datetime({ offset: true }).nullable(),
 	status: z.string(),
 	source_url: z.url().nullable().or(z.string('')),
-	stage: z.string().nullable()
+	stage: z.string().nullable(),
 });
 
 export const paperStages = [

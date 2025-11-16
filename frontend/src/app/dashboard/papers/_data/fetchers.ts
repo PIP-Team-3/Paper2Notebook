@@ -43,4 +43,3 @@ export async function uploadPaper(
 	const paperRes = await getPaper(res['paper_id']);
 	return paperRes;
 }
-

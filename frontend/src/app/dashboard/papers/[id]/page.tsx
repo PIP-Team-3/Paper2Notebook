@@ -1,7 +1,7 @@
 import { BreadcrumbSetter } from '../../_components/breadcrumb-context';
 import { getStatusIcon } from '../_data/tools';
 import { DetailItem } from './_components/detail-item';
-import { PaperStepper } from './_components/paper-stepper';
+import { PaperStepperWrapper } from './_components/paper-stepper-wrapper';
 import { StatCard } from './_components/stat-card';
 import { getPaper } from './_data/fetchers';
 
@@ -118,7 +118,7 @@ export default async function PaperPage({
 
 					{/* Stepper Section */}
 					<div className="mt-8 border-t pt-6">
-						<PaperStepper
+						<PaperStepperWrapper
 							currentStage={paper.stage}
 							status={paper.status}
 							paperId={paper.id}

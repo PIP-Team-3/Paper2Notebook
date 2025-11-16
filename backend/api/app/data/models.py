@@ -146,6 +146,28 @@ class StoryboardRecord(StoryboardCreate):
     }
 
 
+class AssetCreate(BaseModel):
+    id: str
+    paper_id: Optional[str] = None
+    run_id: Optional[str] = None
+    plan_id: Optional[str] = None
+    kind: str  # 'pdf', 'notebook', 'requirements', 'metrics', 'logs', 'events', 'storyboard'
+    storage_path: str
+    size_bytes: Optional[int] = None
+    checksum: Optional[str] = None
+    created_at: datetime
+
+    model_config = {
+        "extra": "ignore",
+    }
+
+
+class AssetRecord(AssetCreate):
+    model_config = {
+        "extra": "ignore",
+    }
+
+
 __all__ = [
     "PaperCreate",
     "PaperRecord",
@@ -157,4 +179,6 @@ __all__ = [
     "StorageArtifact",
     "StoryboardCreate",
     "StoryboardRecord",
+    "AssetCreate",
+    "AssetRecord",
 ]

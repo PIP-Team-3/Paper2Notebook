@@ -1,0 +1,177 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { X, AlertCircle } from 'lucide-react';
+import { fetchAPI } from '../../../../../lib/api';
+
+interface Claim {
+	id: string;
+	dataset_name: string;
+	split: string;
+	metric_name: string;
+	metric_value: number;
+	units: string;
+	source_citation: string;
+	confidence: number;
+	created_at: string;
+}
+
+interface ClaimsTableProps {
+	paperId: string;
+	show: boolean;
+	onClose: () => void;
+}
+
+export function ClaimsTable({ paperId, show, onClose }: ClaimsTableProps) {
+	const [claims, setClaims] = useState<Claim[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!show) return;
+
+		const fetchClaims = async () => {
+			try {
+				setIsLoading(true);
+				setError(null);
+				const response = await fetchAPI(`/papers/${paperId}/claims`);
+
+				// The API returns an array of claims directly
+				if (Array.isArray(response)) {
+					setClaims(response);
+				} else if (response.claims) {
+					// Fallback if the response has a claims property
+					setClaims(response.claims);
+				} else {
+					setClaims([]);
+				}
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : 'Failed to fetch claims';
+				setError(errorMessage);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchClaims();
+	}, [paperId, show]);
+
+	if (!show) return null;
+
+	return (
+		<div className="mt-4 rounded-lg border border-gray-200 bg-gray-50">
+			<div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-2">
+				<div>
+					<p className="font-semibold text-gray-700 text-sm">
+						Extracted Claims
+					</p>
+					{claims.length > 0 && (
+						<p className="text-gray-500 text-xs">
+							{claims.length} claim{claims.length !== 1 ? 's' : ''} found
+						</p>
+					)}
+				</div>
+				<button
+					onClick={onClose}
+					className="text-gray-500 hover:text-gray-700"
+					type="button"
+				>
+					<X className="h-4 w-4" />
+				</button>
+			</div>
+
+			<div className="p-4">
+				{isLoading && (
+					<div className="text-center text-gray-500 text-sm">
+						Loading claims...
+					</div>
+				)}
+
+				{error && (
+					<div className="flex items-center gap-2 rounded border border-red-200 bg-red-50 p-3">
+						<AlertCircle className="h-4 w-4 text-red-500" />
+						<p className="text-red-700 text-sm">{error}</p>
+					</div>
+				)}
+
+				{!isLoading && !error && claims.length === 0 && (
+					<div className="text-center text-gray-500 text-sm">
+						No claims extracted yet
+					</div>
+				)}
+
+				{!isLoading && !error && claims.length > 0 && (
+					<div className="overflow-x-auto">
+						<table className="w-full border-collapse">
+							<thead>
+								<tr className="border-b border-gray-200 bg-gray-50">
+									<th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">
+										Dataset
+									</th>
+									<th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">
+										Split
+									</th>
+									<th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">
+										Metric
+									</th>
+									<th className="px-3 py-2 text-right font-semibold text-gray-700 text-xs">
+										Value
+									</th>
+									<th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">
+										Citation
+									</th>
+									<th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs">
+										Confidence
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{claims.map((claim) => (
+									<tr
+										key={claim.id}
+										className="border-b border-gray-100 hover:bg-gray-50"
+									>
+										<td className="px-3 py-2 text-gray-800 text-sm">
+											{claim.dataset_name}
+										</td>
+										<td className="px-3 py-2 text-gray-600 text-sm">
+											{claim.split}
+										</td>
+										<td className="px-3 py-2 text-gray-800 text-sm">
+											{claim.metric_name}
+										</td>
+										<td className="px-3 py-2 text-right font-mono text-gray-800 text-sm">
+											{claim.metric_value}
+											{claim.units && (
+												<span className="ml-1 text-gray-500">
+													{claim.units}
+												</span>
+											)}
+										</td>
+										<td className="px-3 py-2 text-gray-600 text-xs">
+											{claim.source_citation}
+										</td>
+										<td className="px-3 py-2 text-center">
+											<span
+												className={`inline-block rounded px-2 py-1 font-mono text-xs ${
+													claim.confidence >= 0.9
+														? 'bg-green-100 text-green-800'
+														: claim.confidence >= 0.7
+															? 'bg-yellow-100 text-yellow-800'
+															: 'bg-red-100 text-red-800'
+												}`}
+											>
+												{(claim.confidence * 100).toFixed(0)}%
+											</span>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}

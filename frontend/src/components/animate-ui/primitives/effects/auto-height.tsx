@@ -8,10 +8,7 @@ import {
 	type Transition,
 } from 'motion/react';
 import type * as React from 'react';
-import {
-	Slot,
-	type WithAsChild,
-} from '../animate/slot';
+import { Slot, type WithAsChild } from '../animate/slot';
 import { useAutoHeight } from '../../../../hooks/use-auto-height';
 
 type AutoHeightProps = WithAsChild<

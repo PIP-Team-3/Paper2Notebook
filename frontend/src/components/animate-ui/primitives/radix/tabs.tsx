@@ -8,10 +8,7 @@ import {
 } from 'motion/react';
 import { Tabs as TabsPrimitive } from 'radix-ui';
 import type * as React from 'react';
-import {
-	AutoHeight,
-	type AutoHeightProps,
-} from '../effects/auto-height';
+import { AutoHeight, type AutoHeightProps } from '../effects/auto-height';
 import {
 	Highlight,
 	HighlightItem,

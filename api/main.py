@@ -326,6 +326,41 @@ def get_latest_plan(paper_id: str):
             detail=f"Failed to retrieve plan: {str(e)}"
         )
 
+@app.get("/papers/{paper_id}/plan-json")
+def get_plan_json(paper_id: str):
+    """
+    Get the latest plan JSON for a paper.
+    Returns the plan_json field from the latest plan.
+    """
+    try:
+        # Query plans table for this paper, ordered by created_at descending
+        plans_response = supabase.table("plans").select("plan_json").eq("paper_id", paper_id).order("created_at", desc=True).limit(1).execute()
+        plans_data = plans_response.data
+
+        if not plans_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No plans found for paper {paper_id}. Generate a plan first."
+            )
+
+        plan_json = plans_data[0].get("plan_json")
+        if not plan_json:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Plan JSON not found for paper {paper_id}."
+            )
+
+        return plan_json
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_plan_json: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve plan JSON: {str(e)}"
+        )
+
 @app.get("/plans/{plan_id}/materialize")
 async def generate_tests(plan_id: str):
     """
@@ -380,6 +415,41 @@ async def generate_tests(plan_id: str):
         raise HTTPException(
             status_code=500,
             detail=f"Test generation failed: {str(e)}"
+        )
+
+@app.get("/plans/{plan_id}/download-urls")
+async def get_plan_download_urls(plan_id: str):
+    """
+    Get signed download URLs for materialized plan artifacts (notebook and requirements.txt).
+    Calls GET /api/v1/plans/{plan_id}/assets on the backend service to get signed URLs.
+
+    Returns JSON response with signed URLs for notebook and requirements files.
+    """
+    import httpx
+
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000")
+    assets_endpoint = f"{backend_url}/api/v1/plans/{plan_id}/assets"
+
+    try:
+        # Call the backend assets endpoint to get signed URLs
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get(assets_endpoint)
+
+        if response.status_code not in [200, 201]:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Backend assets fetch failed: {response.text}"
+            )
+
+        return response.json()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_plan_download_urls: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve plan download URLs: {str(e)}"
         )
 
 @app.get("/plans/{plan_id}/run")

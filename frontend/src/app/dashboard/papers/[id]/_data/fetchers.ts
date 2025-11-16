@@ -1,4 +1,4 @@
-import {fetchAPI, postAPI} from '../../../../../lib/api';
+import { fetchAPI, postAPI } from '../../../../../lib/api';
 import { mockPaper } from '../../_data/fetchers';
 import { type PaperSchema, paperSchema } from '../../_data/schemas';
 
@@ -14,11 +14,9 @@ export async function generateTests(planId: string): Promise<unknown> {
 
 export async function getLatestPlan(paperId: string): Promise<unknown> {
 	const response = await fetchAPI(`/papers/${paperId}/latest-plan`);
+
 	return response;
 }
-
-
-
 
 export async function extractClaimsStream(
 	paperId: string,
@@ -27,6 +25,9 @@ export async function extractClaimsStream(
 		timestamp: string;
 		type: 'progress' | 'log' | 'error' | 'complete';
 		message: string;
+		stage?: string;
+		agent?: string;
+		count?: number;
 	}) => void,
 ): Promise<void> {
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -46,41 +47,23 @@ export async function extractClaimsStream(
 			});
 		});
 
+		// The API middleware sends all events as generic 'message' events
+		// with a transformed JSON payload: { type: 'progress'|'log'|'complete'|'error', message: string, ... }
 		eventSource.addEventListener('message', (event: MessageEvent) => {
 			try {
 				const data = JSON.parse(event.data);
 				const timestamp = new Date().toLocaleTimeString();
 
-				if (data.type === 'error') {
-					onLog({
-						id: String(logId++),
-						timestamp,
-						type: 'error',
-						message: data.message,
-					});
-				} else if (data.stage) {
-					onLog({
-						id: String(logId++),
-						timestamp,
-						type: 'progress',
-						message: `Stage: ${data.stage}`,
-					});
-				} else if (data.delta) {
-					onLog({
-						id: String(logId++),
-						timestamp,
-						type: 'log',
-						message: data.delta,
-					});
-				} else {
-					// Generic log message
-					onLog({
-						id: String(logId++),
-						timestamp,
-						type: 'log',
-						message: JSON.stringify(data),
-					});
-				}
+				// The middleware already transformed the event into a readable format
+				// Just pass it through with our metadata
+				onLog({
+					id: String(logId++),
+					timestamp,
+					type: data.type || 'log',
+					message: data.message || '',
+					count: data.count,
+					agent: data.agent,
+				});
 			} catch (e) {
 				// If not JSON, treat as plain text log
 				onLog({
@@ -97,14 +80,13 @@ export async function extractClaimsStream(
 				id: String(logId++),
 				timestamp: new Date().toLocaleTimeString(),
 				type: 'complete',
-				message: 'Extraction completed',
+				message: 'Stream closed',
 			});
 			eventSource.close();
 			resolve();
 		});
 	});
 }
-
 
 export async function generatePlan(paperId: string): Promise<unknown> {
 	const response = await fetchAPI(`/papers/${paperId}/plan`);
@@ -133,7 +115,9 @@ export async function streamRunEvents(
 		fetch(url, { method: 'GET' })
 			.then((response) => {
 				if (!response.ok) {
-					throw new Error(`Failed to stream run events: ${response.statusText}`);
+					throw new Error(
+						`Failed to stream run events: ${response.statusText}`,
+					);
 				}
 
 				const reader = response.body?.getReader();
@@ -169,7 +153,11 @@ export async function streamRunEvents(
 							const logEntry = {
 								id: String(logId++),
 								timestamp: new Date().toLocaleTimeString(),
-								type: (logData.type || 'log') as 'progress' | 'log' | 'error' | 'complete',
+								type: (logData.type || 'log') as
+									| 'progress'
+									| 'log'
+									| 'error'
+									| 'complete',
 								message: logData.message || '',
 								percent: logData.percent,
 							};

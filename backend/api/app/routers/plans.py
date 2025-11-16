@@ -908,7 +908,36 @@ async def materialize_plan_assets(
             # Store in plans bucket (separate from papers bucket)
             plans_storage.store_text(notebook_key, notebook_bytes.decode("utf-8"), "text/plain")
             plans_storage.store_text(env_key, requirements_text, "text/plain")
+
         db.set_plan_env_hash(plan_id, env_hash)
+
+        # Insert asset records into database
+        from uuid import uuid4
+        from ..data.models import AssetCreate
+
+        now = datetime.now(timezone.utc)
+
+        # Insert notebook asset
+        notebook_asset = AssetCreate(
+            id=str(uuid4()),
+            plan_id=plan_id,
+            kind="notebook",
+            storage_path=notebook_key,
+            size_bytes=len(notebook_bytes),
+            created_at=now,
+        )
+        db.insert_asset(notebook_asset)
+
+        # Insert requirements asset
+        requirements_asset = AssetCreate(
+            id=str(uuid4()),
+            plan_id=plan_id,
+            kind="requirements",
+            storage_path=env_key,
+            size_bytes=len(requirements_text.encode("utf-8")),
+            created_at=now,
+        )
+        db.insert_asset(requirements_asset)
 
     logger.info(
         "plan.materialize.complete plan_id=%s notebook=%s env=%s env_hash=%s",

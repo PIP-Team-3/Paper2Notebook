@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover
         )
 
 from .models import (
+    AssetCreate,
     ClaimCreate,
     ClaimRecord,
     PaperCreate,
@@ -257,6 +258,20 @@ class SupabaseDatabase:
         # Return first record if data is a list, otherwise return as-is
         record_data = data[0] if isinstance(data, list) and len(data) > 0 else data
         return PlanRecord.model_validate(record_data)
+
+    # ------------------------------------------------------------------
+    # Assets
+
+    def insert_asset(self, payload: AssetCreate) -> AssetRecord:
+        from .models import AssetRecord
+        data_dict = payload.model_dump()
+        data_dict["created_at"] = data_dict["created_at"].isoformat()
+        response = self._client.table("assets").insert(data_dict).execute()
+        data = getattr(response, "data", None)
+        if not data:
+            raise RuntimeError("Failed to insert asset")
+        record_data = data[0] if isinstance(data, list) and len(data) > 0 else data
+        return AssetRecord.model_validate(record_data)
 
     # ------------------------------------------------------------------
     # Runs
