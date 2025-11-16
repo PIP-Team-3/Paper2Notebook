@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.jpg
+*.png
+test_local.py
+server.py
+test_client.py
+client.py
+storybook_images_old/
