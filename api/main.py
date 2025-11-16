@@ -553,7 +553,7 @@ async def get_claims(paper_id: str):
     claims = result.data
         
     if not claims:    
-        raise HTTPException(status_code=404, detail=f"Claims for the paper with given id {id} not found")
+        raise HTTPException(status_code=404, detail=f"Claims for the paper with given id {paper_id} not found")
 
     return claims
 
