@@ -107,27 +107,9 @@ Before you begin, ensure you have:
 - **Python 3.12.x** (recommended - tested with 3.12.5)
 - **Node.js 18+** (for frontend)
 - **Git**
-- **Supabase Account** (free tier works) - with database and storage access
-- **OpenAI API Key** (with GPT-4o access and available credits)
+- **Supabase Account** 
+- **OpenAI API Key** 
 
-### System Requirements
-- **Disk Space**: ~2GB for dependencies, ~500MB per processed paper
-- **RAM**: 4GB minimum (8GB recommended for notebook execution)
-- **Internet**: Required for OpenAI API calls and dataset downloads
-
-### Cost Considerations (OpenAI API)
-
-**Expected Costs Per Paper**:
-- Ingestion (vector store creation): $0.10-0.20
-- Claim extraction: $0.05-0.15
-- Plan generation: $0.10-0.30 (o3-mini reasoning tokens)
-- **Total per paper**: ~$0.25-0.65
-
-**Recommendations**:
-- Start with free tier credits ($18 for new accounts)
-- Monitor usage at https://platform.openai.com/usage
-- Set billing limits in OpenAI dashboard
-- Use cheaper models for testing (set `OPENAI_EXTRACTOR_MODEL=gpt-4o-mini` in backend/.env)
 
 ### Verify Python Version
 ```bash
@@ -189,6 +171,11 @@ pyenv local 3.12.5
    .\.venv\Scripts\Activate.ps1  # Windows PowerShell
    # OR: source .venv/bin/activate  # macOS/Linux
    pip install -r api/requirements.txt
+
+   # Load environment variables (Windows PowerShell)
+   Get-Content .env | % { if ($_ -match '^\s*([^#=]+)=(.*)$') { Set-Item -Path ('Env:' + $matches[1].Trim()) -Value ($matches[2].Trim().Trim('"')) } }
+   # OR (macOS/Linux): export $(grep -v '^#' .env | xargs)
+
    python -m uvicorn app.main:app --app-dir api --port 8000
    ```
 
@@ -237,22 +224,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # Service role key (secret!)
 SUPABASE_ANON_KEY=eyJhbGc...  # Anon key (can be public)
 
-# Optional: OpenAI Agent Overrides
-OPENAI_PROJECT=  # Optional project ID
-OPENAI_MODEL=gpt-4o  # Default model
-OPENAI_TEMPERATURE=0.1
-OPENAI_MAX_OUTPUT_TOKENS=4096
-OPENAI_MAX_TURNS=6
-OPENAI_TRACING_ENABLED=true
 
-# Optional: Tool Caps
-TOOL_CAP_FILE_SEARCH_PER_RUN=10
-TOOL_CAP_WEB_SEARCH_PER_RUN=5
-TOOL_CAP_CODE_INTERPRETER_SECONDS=60
-
-# Optional: Dev Toggles
-ALLOW_MISSING_SUPABASE=false
-SUPABASE_BUCKET_PAPERS=papers
 ```
 
 #### Install dependencies
@@ -266,10 +238,30 @@ python -m venv .venv
 pip install -r api/requirements.txt
 ```
 
+#### Load environment variables
+
+**Important**: The backend does not use `python-dotenv` for automatic .env loading. You must manually load environment variables into your shell.
+
+**Windows PowerShell** (run this in the terminal where you'll start the backend):
+
+```powershell
+# From backend/ directory
+Get-Content .env | % { if ($_ -match '^\s*([^#=]+)=(.*)$') { Set-Item -Path ('Env:' + $matches[1].Trim()) -Value ($matches[2].Trim().Trim('"')) } }
+```
+
+**macOS/Linux** (bash/zsh):
+
+```bash
+# From backend/ directory
+export $(grep -v '^#' .env | xargs)
+```
+
+**Note**: You need to run this command in each new terminal session before starting the backend.
+
 #### Run the backend
 
 ```powershell
-# From backend/ directory with venv activated
+# From backend/ directory with venv activated and env vars loaded
 python -m uvicorn app.main:app --app-dir api --port 8000 --log-level info
 ```
 
@@ -731,42 +723,3 @@ Paper2Notebook/
 - **Project Roadmap**: `backend/docs/ProjectOverview/ROADMAP.md`
 
 ---
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/my-feature`
-2. Make changes and test thoroughly
-3. Commit with clear messages: `git commit -m "feat: add dataset auto-detection"`
-4. Push and create a pull request
-
-**PR Requirements**:
-- Include tests for new features
-- Update documentation as needed
-- Follow existing code style
-- No secrets in code or logs
-
----
-
-## License
-
-[Add your license here]
-
----
-
-## Acknowledgments
-
-- **OpenAI Agents SDK** - LLM-powered extraction and planning
-- **Supabase** - Database and storage infrastructure
-- **Next.js Team** - Frontend framework
-
----
-
-## Support
-
-For issues and questions:
-- **GitHub Issues**: https://github.com/PIP-Team-3/Paper2Notebook/issues
-- **Documentation**: `backend/docs/`
-
----
-
-**Happy reproducing!**
