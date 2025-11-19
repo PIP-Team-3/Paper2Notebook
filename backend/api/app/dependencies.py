@@ -57,6 +57,13 @@ def _supabase_plans_storage() -> SupabaseStorage:
     return SupabaseStorage(_supabase_client(), settings.supabase_bucket_plans)
 
 
+@lru_cache
+def _supabase_datasets_storage() -> SupabaseStorage:
+    """Storage instance for user-uploaded datasets (Phase A.5)."""
+    settings = get_settings()
+    return SupabaseStorage(_supabase_client(), settings.supabase_bucket_datasets)
+
+
 def get_supabase_db() -> SupabaseDatabase:
     return _supabase_database()
 
@@ -68,6 +75,11 @@ def get_supabase_storage() -> SupabaseStorage:
 def get_supabase_plans_storage() -> SupabaseStorage:
     """Get storage instance for plan artifacts (notebooks, requirements)."""
     return _supabase_plans_storage()
+
+
+def get_supabase_datasets_storage() -> SupabaseStorage:
+    """Get storage instance for user-uploaded datasets (Phase A.5)."""
+    return _supabase_datasets_storage()
 
 
 def get_file_search_service() -> FileSearchService:
@@ -82,5 +94,7 @@ __all__ = [
     "get_file_search_service",
     "get_supabase_db",
     "get_supabase_storage",
+    "get_supabase_plans_storage",
+    "get_supabase_datasets_storage",
     "get_tool_tracker",
 ]

@@ -874,12 +874,24 @@ async def materialize_plan_assets(
             },
         ) from exc
 
+    # Phase A.5: Fetch paper to check for uploaded dataset
+    paper = None
+    if plan_record.paper_id:
+        paper = db.get_paper(plan_record.paper_id)
+        if paper and paper.dataset_storage_path:
+            logger.info(
+                "materialize.uploaded_dataset plan_id=%s paper_id=%s dataset=%s",
+                plan_id,
+                plan_record.paper_id,
+                paper.dataset_original_filename
+            )
+
     notebook_key = f"{plan_id}/notebook.ipynb"
     env_key = f"{plan_id}/requirements.txt"
 
     with traced_run("p2n.materialize") as span:
         with traced_subspan(span, "p2n.materialize.codegen"):
-            notebook_bytes = build_notebook_bytes(plan, plan_id)
+            notebook_bytes = build_notebook_bytes(plan, plan_id, paper=paper)
             requirements_text, env_hash = build_requirements(plan)
 
         # Validate notebook before persisting

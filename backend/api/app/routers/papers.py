@@ -35,7 +35,9 @@ from ..utils.redaction import redact_vector_store_id
 
 logger = logging.getLogger(__name__)
 
-MAX_PAPER_BYTES = 15 * 1024 * 1024  # 15 MiB limit for uploads
+MAX_PAPER_BYTES = 15 * 1024 * 1024  # 15 MiB limit for paper uploads
+MAX_DATASET_BYTES = 50 * 1024 * 1024  # 50 MiB limit for dataset uploads (Phase A.5)
+ALLOWED_DATASET_EXTENSIONS = ('.xlsx', '.xls', '.csv')  # Phase A.5
 EXTRACTOR_AGENT_NAME = "extractor"
 START_EVENT_TYPE = "response.created"
 FILE_SEARCH_STAGE_EVENT = "response.file_search_call.searching"
@@ -66,6 +68,7 @@ class IngestResponse(BaseModel):
     paper_id: str
     vector_store_id: str
     storage_path: str
+    dataset_uploaded: bool = False  # Phase A.5: Indicates if dataset was uploaded
 
 
 class VerifyResponse(BaseModel):
@@ -134,6 +137,7 @@ async def ingest_paper(
     url: Optional[HttpUrl] = None,
     title: Optional[str] = None,
     created_by: Optional[str] = Form(None),
+    dataset_file: Optional[UploadFile] = File(None),  # Phase A.5: Optional dataset upload
     db=Depends(get_supabase_db),
     storage=Depends(get_supabase_storage),
     file_search: FileSearchService = Depends(get_file_search_service),
@@ -174,72 +178,166 @@ async def ingest_paper(
 
     checksum = _compute_checksum(data)
     existing = db.get_paper_by_checksum(checksum)
+
+    # Track whether this is a dataset-only update to existing paper
+    is_dataset_update = False
+
     if existing:
-        logger.info(
-            "ingest.idempotent paper_id=%s storage_path=%s vector_store_id=%s created_by_present=%s",
-            existing.id,
-            existing.pdf_storage_path,
-            redact_vector_store_id(existing.vector_store_id),
-            existing.created_by is not None,
-        )
-        return IngestResponse(
-            paper_id=existing.id,
-            vector_store_id=existing.vector_store_id,
-            storage_path=existing.pdf_storage_path,
-        )
-
-    paper_id = str(uuid4())
-    now = datetime.now(timezone.utc)
-    storage_path = _build_storage_path(now, paper_id)
-    logger.info("ingest.storage.write paper_id=%s path=%s", paper_id, storage_path)
-    with traced_run("p2n.ingest.storage.write"):
-        storage.store_pdf(storage_path, data)
-
-    vector_store_id: Optional[str] = None
-    logger.info("ingest.file_search.index paper_id=%s", paper_id)
-    try:
-        with traced_run("p2n.ingest.file_search.index"):
-            vector_store_id = file_search.create_vector_store(name=f"paper-{paper_id}")
-            file_search.add_pdf(vector_store_id, filename=filename, data=data)
-    except OpenAIError as exc:
-        logger.exception(
-            "ingest.file_search.failed paper_id=%s vector_store_id=%s",
-            paper_id,
-            redact_vector_store_id(vector_store_id),
-        )
-        cleanup_ok = storage.delete_object(storage_path)
-        log_func = logger.info if cleanup_ok else logger.warning
-        log_func(
-            "ingest.storage.cleanup.%s paper_id=%s path=%s vector_store_id=%s",
-            "completed" if cleanup_ok else "not_found",
-            paper_id,
-            storage_path,
-            redact_vector_store_id(vector_store_id),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail={
-                "code": "E_FILESEARCH_INDEX_FAILED",
-                "message": "Failed to index paper into File Search",
-                "remediation": "Verify the OpenAI API key has File Search access and retry the ingest",
-            },
-        ) from exc
-
-    try:
-        paper = db.insert_paper(
-            PaperCreate(
-                id=paper_id,
-                title=title or filename,
-                source_url=url,
-                pdf_storage_path=storage_path,
-                vector_store_id=vector_store_id,
-                pdf_sha256=checksum,
-                status="ready",
-                created_by=effective_created_by,
-                created_at=now,
-                updated_at=now,
+        # Phase A.5: Allow dataset upload if paper exists but has no dataset
+        if dataset_file and not existing.dataset_storage_path:
+            logger.info(
+                "ingest.dataset_update paper_id=%s (adding dataset to existing paper)",
+                existing.id,
             )
-        )
+            # Reuse existing paper metadata (skip PDF upload and indexing)
+            paper_id = existing.id
+            now = datetime.now(timezone.utc)
+            storage_path = existing.pdf_storage_path
+            vector_store_id = existing.vector_store_id
+            is_dataset_update = True
+        else:
+            # Standard deduplication: return existing paper
+            logger.info(
+                "ingest.idempotent paper_id=%s storage_path=%s vector_store_id=%s created_by_present=%s dataset_present=%s",
+                existing.id,
+                existing.pdf_storage_path,
+                redact_vector_store_id(existing.vector_store_id),
+                existing.created_by is not None,
+                existing.dataset_storage_path is not None,
+            )
+            return IngestResponse(
+                paper_id=existing.id,
+                vector_store_id=existing.vector_store_id,
+                storage_path=existing.pdf_storage_path,
+                dataset_uploaded=existing.dataset_storage_path is not None,
+            )
+
+    # New paper upload: generate IDs and upload PDF
+    if not is_dataset_update:
+        paper_id = str(uuid4())
+        now = datetime.now(timezone.utc)
+        storage_path = _build_storage_path(now, paper_id)
+        logger.info("ingest.storage.write paper_id=%s path=%s", paper_id, storage_path)
+        with traced_run("p2n.ingest.storage.write"):
+            storage.store_pdf(storage_path, data)
+
+    # Phase A.5: Upload dataset if provided
+    dataset_storage_path: Optional[str] = None
+    dataset_format: Optional[str] = None
+    dataset_original_filename: Optional[str] = None
+
+    if dataset_file:
+        # Validate file extension
+        if not dataset_file.filename or not dataset_file.filename.lower().endswith(ALLOWED_DATASET_EXTENSIONS):
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail={
+                    "code": "E_UNSUPPORTED_DATASET_TYPE",
+                    "message": f"Only {', '.join(ALLOWED_DATASET_EXTENSIONS)} files are supported",
+                    "remediation": "Upload a dataset in Excel (.xlsx, .xls) or CSV (.csv) format",
+                },
+            )
+
+        # Read dataset file
+        dataset_data = await dataset_file.read()
+
+        # Validate file size
+        if len(dataset_data) > MAX_DATASET_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail={
+                    "code": "E_DATASET_TOO_LARGE",
+                    "message": f"Dataset exceeds {MAX_DATASET_BYTES // (1024 * 1024)} MiB upload cap",
+                    "remediation": "Compress or reduce the dataset size before uploading",
+                },
+            )
+
+        # Build dataset storage path
+        dataset_extension = dataset_file.filename.split('.')[-1].lower()
+        dataset_storage_path = f"{now.year:04d}/{now.month:02d}/{now.day:02d}/{paper_id}.{dataset_extension}"
+        dataset_format = dataset_extension
+        dataset_original_filename = dataset_file.filename
+
+        logger.info("ingest.dataset.write paper_id=%s path=%s format=%s", paper_id, dataset_storage_path, dataset_format)
+
+        # Upload dataset to datasets bucket
+        from ..dependencies import get_supabase_datasets_storage
+        datasets_storage = get_supabase_datasets_storage()
+
+        # Determine content type
+        content_type_map = {
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls': 'application/vnd.ms-excel',
+            'csv': 'text/csv',
+        }
+        content_type = content_type_map.get(dataset_format, 'application/octet-stream')
+
+        with traced_run("p2n.ingest.dataset.write"):
+            datasets_storage.store_asset(dataset_storage_path, dataset_data, content_type)
+
+        logger.info("ingest.dataset.uploaded paper_id=%s size_bytes=%d", paper_id, len(dataset_data))
+
+    # Index PDF in vector store (skip if this is a dataset-only update)
+    if not is_dataset_update:
+        vector_store_id: Optional[str] = None
+        logger.info("ingest.file_search.index paper_id=%s", paper_id)
+        try:
+            with traced_run("p2n.ingest.file_search.index"):
+                vector_store_id = file_search.create_vector_store(name=f"paper-{paper_id}")
+                file_search.add_pdf(vector_store_id, filename=filename, data=data)
+        except OpenAIError as exc:
+            logger.exception(
+                "ingest.file_search.failed paper_id=%s vector_store_id=%s",
+                paper_id,
+                redact_vector_store_id(vector_store_id),
+            )
+            cleanup_ok = storage.delete_object(storage_path)
+            log_func = logger.info if cleanup_ok else logger.warning
+            log_func(
+                "ingest.storage.cleanup.%s paper_id=%s path=%s vector_store_id=%s",
+                "completed" if cleanup_ok else "not_found",
+                paper_id,
+                storage_path,
+                redact_vector_store_id(vector_store_id),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail={
+                    "code": "E_FILESEARCH_INDEX_FAILED",
+                    "message": "Failed to index paper into File Search",
+                    "remediation": "Verify the OpenAI API key has File Search access and retry the ingest",
+                },
+            ) from exc
+
+    try:
+        if is_dataset_update:
+            # Update existing paper with dataset metadata only
+            paper = db.update_paper_dataset(
+                paper_id=paper_id,
+                dataset_storage_path=dataset_storage_path,  # type: ignore[arg-type]
+                dataset_format=dataset_format,  # type: ignore[arg-type]
+                dataset_original_filename=dataset_original_filename,  # type: ignore[arg-type]
+            )
+        else:
+            # Insert new paper with all metadata
+            paper = db.insert_paper(
+                PaperCreate(
+                    id=paper_id,
+                    title=title or filename,
+                    source_url=url,
+                    pdf_storage_path=storage_path,
+                    vector_store_id=vector_store_id,
+                    pdf_sha256=checksum,
+                    status="ready",
+                    created_by=effective_created_by,
+                    created_at=now,
+                    updated_at=now,
+                    # Phase A.5: Dataset upload fields
+                    dataset_storage_path=dataset_storage_path,
+                    dataset_format=dataset_format,
+                    dataset_original_filename=dataset_original_filename,
+                )
+            )
     except Exception as exc:
         logger.exception(
             "ingest.db.insert.failed paper_id=%s storage_path=%s vector_store_id=%s created_by_present=%s",
@@ -277,16 +375,18 @@ async def ingest_paper(
         ) from exc
 
     logger.info(
-        "ingest.completed paper_id=%s storage_path=%s vector_store_id=%s created_by_present=%s",
+        "ingest.completed paper_id=%s storage_path=%s vector_store_id=%s created_by_present=%s dataset_uploaded=%s",
         paper.id,
         paper.pdf_storage_path,
         redact_vector_store_id(vector_store_id),
         created_by_present,
+        dataset_storage_path is not None,
     )
     return IngestResponse(
         paper_id=paper.id,
         vector_store_id=vector_store_id,
         storage_path=paper.pdf_storage_path,
+        dataset_uploaded=dataset_storage_path is not None,
     )
 
 

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     supabase_anon_key: Optional[str] = None
     supabase_bucket_papers: str = "papers"
     supabase_bucket_plans: str = "plans"  # For generated artifacts (notebooks, requirements)
+    supabase_bucket_datasets: str = "datasets"  # For user-uploaded datasets (Phase A.5)
 
     allow_missing_supabase: bool = False
 

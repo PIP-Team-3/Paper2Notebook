@@ -15,6 +15,7 @@ import logging
 
 from .base import CodeGenerator
 from .dataset import (
+    ExcelDatasetGenerator,
     HuggingFaceDatasetGenerator,
     SklearnDatasetGenerator,
     SyntheticDatasetGenerator,
@@ -44,19 +45,22 @@ class GeneratorFactory:
     """
 
     @staticmethod
-    def get_dataset_generator(plan: PlanDocumentV11) -> CodeGenerator:
+    def get_dataset_generator(plan: PlanDocumentV11, paper=None) -> CodeGenerator:
         """
         Select appropriate dataset generator based on plan.
 
         Phase 2: Smart selection via registry lookup with graceful fallback.
+        Phase A.5: Support for user-uploaded datasets via paper context.
 
         Selection strategy:
-        1. Lookup plan.dataset.name in registry (handles aliases)
-        2. If found: Return appropriate generator based on source
-        3. If not found: Return SyntheticDatasetGenerator (graceful fallback)
+        1. Check if paper has uploaded dataset matching plan.dataset.name
+        2. Lookup plan.dataset.name in registry (handles aliases)
+        3. If found: Return appropriate generator based on source
+        4. If not found: Return SyntheticDatasetGenerator (graceful fallback)
 
         Args:
             plan: The plan document containing dataset info
+            paper: Optional PaperRecord with uploaded dataset (Phase A.5)
 
         Returns:
             CodeGenerator instance for dataset loading
@@ -66,12 +70,34 @@ class GeneratorFactory:
             >>> gen = GeneratorFactory.get_dataset_generator(plan)
             >>> isinstance(gen, HuggingFaceDatasetGenerator)
             True
-            >>> plan.dataset.name = "unknown_dataset"
-            >>> gen = GeneratorFactory.get_dataset_generator(plan)
-            >>> isinstance(gen, SyntheticDatasetGenerator)
+            >>> plan.dataset.name = "penalty_shootouts"
+            >>> gen = GeneratorFactory.get_dataset_generator(plan, paper=paper_with_upload)
+            >>> isinstance(gen, ExcelDatasetGenerator)
             True
         """
         dataset_name = plan.dataset.name
+
+        # Phase A.5: Check for uploaded dataset FIRST (before registry)
+        # This allows users to override registry datasets with their own uploads
+        if paper and paper.dataset_storage_path:
+            # Uploaded dataset detected - route to appropriate generator based on format
+            logger.info(
+                "Using uploaded dataset for paper '%s': %s (%s format)",
+                paper.id,
+                paper.dataset_original_filename,
+                paper.dataset_format,
+            )
+            # For now, assume all uploaded datasets are Excel (future: support CSV)
+            # Import here to create minimal metadata for uploaded dataset
+            from .dataset_registry import DatasetMetadata, DatasetSource
+
+            uploaded_metadata = DatasetMetadata(
+                source=DatasetSource.EXCEL,
+                load_function="read_excel",
+                typical_size_mb=1,  # Unknown, assume small
+                license="user-provided",
+            )
+            return ExcelDatasetGenerator(uploaded_metadata, paper=paper)
 
         # Lookup in registry (handles normalization + aliases)
         metadata = lookup_dataset(dataset_name)
@@ -116,6 +142,13 @@ class GeneratorFactory:
                 metadata.typical_size_mb,
             )
             return HuggingFaceDatasetGenerator(metadata)
+
+        elif metadata.source == DatasetSource.EXCEL:
+            logger.info(
+                "Dataset '%s' found in registry: Excel (local .xls/.xlsx file)",
+                dataset_name,
+            )
+            return ExcelDatasetGenerator(metadata, paper=paper)
 
         else:
             # Unknown source → fallback to synthetic

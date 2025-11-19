@@ -238,6 +238,238 @@ class TorchvisionDatasetGenerator(CodeGenerator):
         ]
 
 
+class ExcelDatasetGenerator(CodeGenerator):
+    """
+    Generates code to load Excel datasets (.xls, .xlsx) with pandas.
+
+    Supports tabular datasets like:
+    - Penalty Shootouts: Soccer penalty shootout outcomes (265 rows)
+    - Economic experiments: Small-scale randomized trials
+    - Survey data: Structured questionnaires
+
+    Features:
+    - Supports both .xls (xlrd) and .xlsx (openpyxl) formats
+    - Auto-detects target column (Win, target, label, y, class)
+    - Categorical encoding (LabelEncoder for strings, keep integers)
+    - No subsampling needed for small datasets (<5000 rows)
+    - Supabase upload support (Phase A.5)
+    """
+
+    def __init__(self, metadata: DatasetMetadata, paper=None):
+        """
+        Initialize with dataset metadata.
+
+        Args:
+            metadata: Dataset metadata from registry
+            paper: Optional PaperRecord with uploaded dataset (Phase A.5)
+        """
+        self.metadata = metadata
+        self.paper = paper
+
+    def generate_imports(self, plan: PlanDocumentV11) -> List[str]:
+        """Import statements for Excel dataset loading."""
+        imports = [
+            "import pandas as pd",
+            "from sklearn.preprocessing import LabelEncoder",
+            "from sklearn.model_selection import train_test_split",
+            "import os",
+        ]
+
+        # Add Supabase download dependencies if paper has uploaded dataset
+        if self.paper and self.paper.dataset_storage_path:
+            imports.extend([
+                "import requests",
+                "from io import BytesIO",
+            ])
+
+        return imports
+
+    def _generate_uploaded_dataset_code(self, plan: PlanDocumentV11) -> str:
+        """
+        Generate code to download and load uploaded dataset from Supabase (Phase A.5).
+
+        Creates a signed URL (24 hour expiration) and downloads the dataset via requests.
+        Loads Excel file from BytesIO buffer.
+        """
+        dataset_name = plan.dataset.name
+
+        return textwrap.dedent(
+            f"""
+        # Dataset: {dataset_name} (Uploaded with paper - Supabase Storage)
+        log_event("stage_update", {{"stage": "dataset_load", "dataset": "{dataset_name}"}})
+
+        # Download dataset from Supabase signed URL
+        # URL is injected at runtime by the sandbox (24-hour expiration)
+        dataset_url = os.getenv("DATASET_URL")
+        if not dataset_url:
+            raise ValueError("DATASET_URL environment variable not set. Cannot download uploaded dataset.")
+
+        log_event("info", {{"message": f"Downloading dataset from Supabase: {{dataset_url[:50]}}..."}})
+
+        response = requests.get(dataset_url, timeout=300)  # 5 minute timeout for large datasets
+        response.raise_for_status()
+
+        # Load Excel file from memory
+        df = pd.read_excel(BytesIO(response.content))
+
+        log_event("metric_update", {{"metric": "dataset_rows", "value": len(df)}})
+
+        # Detect target column (common names)
+        target_column = None
+        for col in ["Win", "win", "target", "label", "class", "y", "Target", "Label"]:
+            if col in df.columns:
+                target_column = col
+                break
+
+        if target_column is None:
+            # Fall back to last column
+            target_column = df.columns[-1]
+            log_event("warning", {{"message": f"No standard target column found. Using last column: {{target_column}}"}})
+
+        # Separate features and target
+        y = df[target_column].values
+        X_df = df.drop(columns=[target_column])
+
+        # Drop high-cardinality string columns (team names, competition names, etc.)
+        # Keep only columns with reasonable cardinality (<50 unique values)
+        for col in X_df.columns:
+            if X_df[col].dtype == 'object':  # String column
+                if X_df[col].nunique() > 50:
+                    X_df = X_df.drop(columns=[col])
+                    log_event("info", {{"message": f"Dropped high-cardinality column: {{col}}"}})
+
+        # Encode categorical features
+        label_encoders = {{}}
+        for col in X_df.columns:
+            if X_df[col].dtype == 'object':  # String categorical
+                le = LabelEncoder()
+                X_df[col] = le.fit_transform(X_df[col].astype(str))
+                label_encoders[col] = le
+
+        # Convert to numpy array
+        X = X_df.values
+
+        # Subsample for CPU budget (only if dataset is large)
+        MAX_SAMPLES = int(os.getenv("MAX_TRAIN_SAMPLES", "5000"))
+        if len(X) > MAX_SAMPLES:
+            indices = np.random.RandomState(SEED).choice(len(X), MAX_SAMPLES, replace=False)
+            X, y = X[indices], y[indices]
+            log_event("info", {{"message": f"Subsampled {{len(X)}} → {{MAX_SAMPLES}} rows"}})
+
+        # Split train/test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=SEED
+        )
+
+        log_event("metric_update", {{"metric": "dataset_samples", "value": len(X)}})
+        log_event("metric_update", {{"metric": "dataset_features", "value": X.shape[1]}})
+        """
+        ).strip()
+
+    def generate_code(self, plan: PlanDocumentV11) -> str:
+        """
+        Generate code to load Excel dataset with pandas.
+
+        Routes between:
+        1. Supabase-uploaded dataset (if paper has dataset_storage_path) - Phase A.5
+        2. Local registry dataset (fallback for testing/development)
+
+        Target column detection heuristics:
+        1. Check plan.dataset.notes for target_column hint
+        2. Try common names: Win, win, target, label, class, y
+        3. Fall back to last column
+
+        Preprocessing (Phase 2):
+        - Categorical encoding: LabelEncoder for string columns
+        - Numeric columns: Keep as-is (already encoded in most datasets)
+        - Drop high-cardinality columns (team names, IDs, etc.)
+        """
+        # Route to uploaded dataset if available (Phase A.5)
+        if self.paper and self.paper.dataset_storage_path:
+            return self._generate_uploaded_dataset_code(plan)
+
+        # Fallback: Local registry dataset (for development/testing)
+        dataset_name = plan.dataset.name
+        file_path = f"./{dataset_name}.xls"  # Placeholder - will be replaced with actual path
+
+        return textwrap.dedent(
+            f"""
+        # Dataset: {dataset_name} (Excel format - local registry)
+        log_event("stage_update", {{"stage": "dataset_load", "dataset": "{dataset_name}"}})
+
+        # Load Excel file (supports .xls and .xlsx)
+        df = pd.read_excel("{file_path}")
+
+        log_event("metric_update", {{"metric": "dataset_rows", "value": len(df)}})
+
+        # Detect target column (common names)
+        target_column = None
+        for col in ["Win", "win", "target", "label", "class", "y", "Target", "Label"]:
+            if col in df.columns:
+                target_column = col
+                break
+
+        if target_column is None:
+            # Fall back to last column
+            target_column = df.columns[-1]
+            log_event("warning", {{"message": f"No standard target column found. Using last column: {{target_column}}"}})
+
+        # Separate features and target
+        y = df[target_column].values
+        X_df = df.drop(columns=[target_column])
+
+        # Drop high-cardinality string columns (team names, competition names, etc.)
+        # Keep only columns with reasonable cardinality (<50 unique values)
+        for col in X_df.columns:
+            if X_df[col].dtype == 'object':  # String column
+                if X_df[col].nunique() > 50:
+                    X_df = X_df.drop(columns=[col])
+                    log_event("info", {{"message": f"Dropped high-cardinality column: {{col}}"}})
+
+        # Encode categorical features
+        label_encoders = {{}}
+        for col in X_df.columns:
+            if X_df[col].dtype == 'object':  # String categorical
+                le = LabelEncoder()
+                X_df[col] = le.fit_transform(X_df[col].astype(str))
+                label_encoders[col] = le
+
+        # Convert to numpy array
+        X = X_df.values
+
+        # Subsample for CPU budget (only if dataset is large)
+        MAX_SAMPLES = int(os.getenv("MAX_TRAIN_SAMPLES", "5000"))
+        if len(X) > MAX_SAMPLES:
+            indices = np.random.RandomState(SEED).choice(len(X), MAX_SAMPLES, replace=False)
+            X, y = X[indices], y[indices]
+            log_event("info", {{"message": f"Subsampled {{len(X)}} → {{MAX_SAMPLES}} rows"}})
+
+        # Split train/test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=SEED
+        )
+
+        log_event("metric_update", {{"metric": "dataset_samples", "value": len(X)}})
+        log_event("metric_update", {{"metric": "dataset_features", "value": X.shape[1]}})
+        """
+        ).strip()
+
+    def generate_requirements(self, plan: PlanDocumentV11) -> List[str]:
+        """Pip requirements for Excel dataset loading."""
+        requirements = [
+            "pandas==2.2.2",
+            "xlrd>=2.0.1",  # For .xls files
+            "openpyxl>=3.1.0",  # For .xlsx files
+            "scikit-learn==1.5.1",
+        ]
+
+        # Add requests for Supabase downloads (Phase A.5)
+        if self.paper and self.paper.dataset_storage_path:
+            requirements.append("requests>=2.31.0")
+
+        return requirements
+
+
 class HuggingFaceDatasetGenerator(CodeGenerator):
     """
     Generates code to load HuggingFace datasets with streaming support.

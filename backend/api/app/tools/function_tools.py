@@ -2,6 +2,7 @@
 
 import hashlib
 import math
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .errors import ToolValidationError
 from .registry import FunctionToolSpec, function_tools
+from ..materialize.generators.dataset_registry import normalize_dataset_name
 
 # Synced with Phase 2 dataset_registry.py - 9 datasets total
 _DATASETS = {
@@ -145,12 +147,20 @@ _ALLOWED_PACKAGES = {
 
 class DatasetResolverArgs(BaseModel):
     query: str = Field(..., description="Dataset name or alias")
+    paper_id: str = Field(..., description="Paper ID to check for uploaded datasets (Phase A.5)")
 
     @field_validator("query")
     @classmethod
     def _validate_query(cls, value: str) -> str:
         if not value or not value.strip():
             raise ToolValidationError("Dataset query cannot be blank")
+        return value
+
+    @field_validator("paper_id")
+    @classmethod
+    def _validate_paper_id(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ToolValidationError("Paper ID cannot be blank")
         return value
 
 
@@ -202,13 +212,57 @@ class GapCalculatorArgs(BaseModel):
 
 
 def dataset_resolver(args: DatasetResolverArgs) -> dict[str, Any]:
+    """
+    Resolve dataset availability from registry OR paper uploads (Phase A.5).
+
+    Priority:
+    1. Check public registry first (sklearn, torchvision, HuggingFace)
+    2. Check if paper has uploaded dataset matching the query
+    3. Reject with ToolValidationError
+    """
     query = args.query.strip().lower()
     dataset_key = _DATASET_ALIASES.get(query, query)
-    try:
+
+    # 1. Check public registry (existing logic)
+    if dataset_key in _DATASETS:
         canonical = _DATASETS[dataset_key]
-    except KeyError as exc:
-        raise ToolValidationError(f"Dataset '{args.query}' is not allow-listed") from exc
-    return canonical
+        return canonical
+
+    # 2. Check paper uploads (Phase A.5)
+    # Import here to avoid circular dependency
+    from ..dependencies import get_supabase_db
+
+    try:
+        db = get_supabase_db()
+        paper = db.get_paper(args.paper_id)
+
+        if paper and paper.dataset_storage_path:
+            # Match by normalized filename stem
+            uploaded_stem = Path(paper.dataset_original_filename or "").stem
+            normalized_uploaded = normalize_dataset_name(uploaded_stem)
+            normalized_query = normalize_dataset_name(args.query)
+
+            if normalized_uploaded == normalized_query:
+                # Return uploaded dataset metadata
+                return {
+                    "id": normalized_query,
+                    "name": uploaded_stem,
+                    "source": "uploaded",  # Special marker for uploaded datasets
+                    "license_id": "user-provided",
+                    "size_mb": 1,  # Unknown, assume small
+                    "storage_path": paper.dataset_storage_path,
+                    "dataset_format": paper.dataset_format,
+                    "original_filename": paper.dataset_original_filename,
+                }
+    except Exception:
+        # If database lookup fails, fall through to rejection
+        pass
+
+    # 3. Not available anywhere
+    raise ToolValidationError(
+        f"Dataset '{args.query}' is not allow-listed and not uploaded with paper. "
+        f"Please upload the dataset with the paper or use a registry dataset."
+    )
 
 
 def license_checker(args: LicenseCheckerArgs) -> dict[str, Any]:
@@ -265,7 +319,7 @@ def gap_calculator(args: GapCalculatorArgs) -> dict[str, Any]:
 function_tools.register(
     FunctionToolSpec(
         name="dataset_resolver",
-        description="Resolve dataset aliases to canonical records.",
+        description="Resolve dataset aliases to canonical records from registry OR user uploads (Phase A.5).",
         args_model=DatasetResolverArgs,
         handler=dataset_resolver,
         openai_tool=pydantic_function_tool(DatasetResolverArgs, name="dataset_resolver"),

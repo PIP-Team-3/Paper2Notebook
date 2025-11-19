@@ -139,6 +139,28 @@ class SupabaseDatabase:
             raise RuntimeError("Unable to update paper vector store metadata")
         return PaperRecord.model_validate(data)
 
+    def update_paper_dataset(
+        self, paper_id: str, dataset_storage_path: str, dataset_format: str, dataset_original_filename: str
+    ) -> PaperRecord:
+        """Update paper with dataset upload metadata (Phase A.5)."""
+        update_payload: dict[str, Any] = {
+            "dataset_storage_path": dataset_storage_path,
+            "dataset_format": dataset_format,
+            "dataset_original_filename": dataset_original_filename,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        response = (
+            self._client.table("papers")
+            .update(update_payload)
+            .eq("id", paper_id)
+            .execute()
+        )
+        data = getattr(response, "data", None)
+        if not data or len(data) == 0:
+            raise RuntimeError("Unable to update paper dataset metadata")
+        # update() returns a list, get first item
+        return PaperRecord.model_validate(data[0])
+
     # ------------------------------------------------------------------
     # Claims
     # ------------------------------------------------------------------

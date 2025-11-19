@@ -55,7 +55,7 @@ def build_requirements(plan: PlanDocumentV11) -> Tuple[str, str]:
     return requirements_text, env_hash
 
 
-def build_notebook_bytes(plan: PlanDocumentV11, plan_id: str) -> bytes:
+def build_notebook_bytes(plan: PlanDocumentV11, plan_id: str, paper=None) -> bytes:
     """
     Build a Jupyter notebook from a plan using modular code generators.
 
@@ -63,11 +63,21 @@ def build_notebook_bytes(plan: PlanDocumentV11, plan_id: str) -> bytes:
              SyntheticDatasetGenerator and SklearnLogisticGenerator.
              This produces IDENTICAL output to the previous implementation.
 
+    Phase A.5: Supports user-uploaded datasets via paper context.
+
     Future Phases: Factory will intelligently select generators based on
                    plan.dataset.name, plan.model.name, and plan.config.framework.
+
+    Args:
+        plan: Plan document to materialize
+        plan_id: Plan ID for notebook header
+        paper: Optional PaperRecord with uploaded dataset (Phase A.5)
+
+    Returns:
+        Notebook bytes (UTF-8 encoded JSON)
     """
-    # Get code generators via factory (Phase 2: smart dataset selection)
-    dataset_gen = GeneratorFactory.get_dataset_generator(plan)
+    # Get code generators via factory (Phase 2: smart dataset selection, Phase A.5: uploaded datasets)
+    dataset_gen = GeneratorFactory.get_dataset_generator(plan, paper=paper)
     model_gen = GeneratorFactory.get_model_generator(plan)
 
     # Collect imports from generators

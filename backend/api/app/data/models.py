@@ -19,6 +19,10 @@ class PaperCreate(BaseModel):
     created_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    # Dataset upload fields (Phase A.5)
+    dataset_storage_path: Optional[str] = None
+    dataset_format: Optional[str] = None
+    dataset_original_filename: Optional[str] = None
 
     model_config = {
         "extra": "ignore",
