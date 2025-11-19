@@ -842,19 +842,245 @@ class ClaimCreate(BaseModel):
 
 ---
 
+---
+
+## Testing & Verification
+
+### Bug Fix: DatasetSource Import Shadowing (FIXED ✅)
+
+**Issue**: `UnboundLocalError: cannot access local variable 'DatasetSource' where it is not associated with a value`
+
+**Location**: [factory.py:123](backend/api/app/materialize/generators/factory.py#L123)
+
+**Root Cause**:
+- Line 92 had a local import inside the uploaded dataset check block:
+  ```python
+  from .dataset_registry import DatasetMetadata, DatasetSource
+  ```
+- Python treated `DatasetSource` as a local variable defined only inside the `if` block
+- When `paper=None` (TextCNN regression test), the block wasn't executed
+- Line 123 tried to access `DatasetSource` outside the block → UnboundLocalError
+
+**Fix** (Commit 2d10358):
+- Removed redundant local import of `DatasetSource` (line 92)
+- Uses only the module-level import from line 24: `from .dataset_registry import DatasetSource, lookup_dataset`
+
+**Testing**: ✅ Verified with TextCNN regression test - materialization succeeded
+
+---
+
+### Test Results: TextCNN Regression Test (PASS ✅)
+
+**Objective**: Verify Phase A.5 didn't break existing workflows for papers without uploaded datasets
+
+**Test Details**:
+- Paper: kim_2014_textcnn.pdf
+- Dataset: None uploaded (tests backward compatibility)
+- Expected: Should generate HuggingFace SST-2 loading code, NOT Excel/Supabase code
+
+**Step 1: Upload Paper (No Dataset)**
+```bash
+curl -X POST http://localhost:8000/api/v1/papers/ingest \
+  -F "file=@backend/assets/papers/kim_2014_textcnn.pdf" \
+  -F "title=Convolutional Neural Networks for Sentence Classification"
+```
+
+**Response**:
+```json
+{
+  "paper_id": "147879d5-b8d6-41ca-890d-7f55dbee7029",
+  "vector_store_id": "vs_691cea2f7fac8191b2c13deb649446c1",
+  "storage_path": "papers/dev/2025/11/18/147879d5-b8d6-41ca-890d-7f55dbee7029.pdf",
+  "dataset_uploaded": false  ← ✅ CORRECT
+}
+```
+
+**Step 2: Create Plan**
+```bash
+curl -X POST http://localhost:8000/api/v1/papers/147879d5-b8d6-41ca-890d-7f55dbee7029/plan \
+  -H "Content-Type: application/json" \
+  -d '{"claims": [{"dataset": "SST-2", "split": "train", "metric": "accuracy", "value": 0.87, "units": "%", "citation": "Table 1", "confidence": 0.9}], "budget_minutes": 20}'
+```
+
+**Response**:
+```json
+{
+  "plan_id": "23a1aba7-e302-49ad-be40-2fe07ff0f0e2",
+  "plan_version": "1.1",
+  "data_resolution": {
+    "status": "resolved",  ← ✅ Found in registry
+    "dataset": "SST-2",
+    "canonical_name": "sst2",
+    "reason": "Dataset found in registry as 'sst2'"
+  }
+}
+```
+
+**Step 3: Materialize Notebook**
+```bash
+curl -X POST http://localhost:8000/api/v1/plans/23a1aba7-e302-49ad-be40-2fe07ff0f0e2/materialize
+```
+
+**Response**:
+```json
+{
+  "notebook_asset_path": "23a1aba7-e302-49ad-be40-2fe07ff0f0e2/notebook.ipynb",
+  "env_asset_path": "23a1aba7-e302-49ad-be40-2fe07ff0f0e2/requirements.txt",
+  "env_hash": "476842118a11ef09ebe708a5c55026b40d53b6d160f2deb4256a1604d6c5d555"
+}
+```
+
+**Step 4: Verify Generated Code**
+
+Downloaded notebook contains **HuggingFace code** (NOT Excel/Supabase):
+```python
+# ✅ CORRECT IMPORTS
+from datasets import load_dataset
+from sklearn.feature_extraction.text import CountVectorizer
+
+# ✅ CORRECT DATASET LOADING
+dataset = load_dataset(
+    "glue", "sst2",
+    cache_dir=CACHE_DIR,
+    download_mode="reuse_dataset_if_exists",
+)
+
+# ❌ NO Excel/Supabase code present:
+# - No `import requests`
+# - No `from io import BytesIO`
+# - No `os.getenv("DATASET_URL")`
+# - No `pd.read_excel(BytesIO(...))`
+```
+
+**Step 5: Execute Notebook**
+```bash
+curl -X POST http://localhost:8000/api/v1/plans/23a1aba7-e302-49ad-be40-2fe07ff0f0e2/run
+```
+
+**Execution Results**:
+```json
+{
+  "metrics": {
+    "accuracy": 0.722,
+    "precision": 0.7204301075268817,
+    "recall": 0.8300884955752212,
+    "accuracy_gap": -86.278
+  }
+}
+```
+
+**Analysis**:
+- Notebook executed successfully on SST-2 sentiment classification
+- Accuracy 72.2% (lower than paper's 87% because we use Logistic Regression + bag-of-words, not actual TextCNN)
+- This is expected Phase 2 behavior (simple sklearn models for CPU-only execution)
+
+**Conclusion**: ✅ **BACKWARD COMPATIBILITY CONFIRMED**
+- Papers without datasets use registry/HuggingFace generators
+- No Excel/Supabase code generated when `paper.dataset_storage_path` is None
+- `paper=None` fallback works correctly throughout the pipeline
+- Phase A.5 did NOT break existing workflows
+
+---
+
+### Known Infrastructure Issues
+
+#### Issue: Supabase Storage Bucket MIME Type Restriction ⚠️
+
+**Problem**: Supabase `plans` bucket rejects `.jsonl` files during run artifact persistence
+
+**Error**:
+```
+storage3.exceptions.StorageApiError: {
+  'statusCode': 400,
+  'error': InvalidRequest,
+  'message': mime type application/jsonl is not supported
+}
+```
+
+**Location**: [runs.py:54](backend/api/app/routers/runs.py#L54) - `_persist_artifacts()` function
+
+**When It Happens**:
+- After notebook execution completes successfully
+- When trying to upload `events.jsonl` to `plans/runs/{run_id}/events.jsonl`
+
+**Impact**:
+- ❌ Run artifacts (events.jsonl, logs.txt, metrics.json) cannot be persisted
+- ❌ Run status shows as "failed" even though notebook executed successfully
+- ✅ Notebook execution itself works (metrics are generated)
+- ✅ Metrics are visible in SSE event stream before upload fails
+
+**Root Cause**:
+- Supabase storage buckets have MIME type restrictions configured at bucket level
+- `plans` bucket was likely created with a whitelist of allowed types
+- `application/jsonl` (or `application/x-ndjson`) not in the whitelist
+
+**Solution** (User Action Required):
+1. Login to Supabase Dashboard → Storage → `plans` bucket
+2. Click "Settings" or "Configuration"
+3. Add allowed MIME types:
+   - `application/jsonl`
+   - `application/x-ndjson` (alternative JSONL MIME type)
+   - `text/plain` (fallback - logs.txt already uses this)
+4. Save changes
+
+**Workaround** (Temporary):
+- Change content-type to `text/plain` in [supabase.py:493](backend/api/app/data/supabase.py#L493):
+  ```python
+  # BEFORE:
+  storage.store_text(key, events_jsonl, content_type="application/jsonl")
+
+  # AFTER (workaround):
+  storage.store_text(key, events_jsonl, content_type="text/plain")
+  ```
+
+**Status**: ⚠️ **UNRESOLVED** - Requires Supabase bucket configuration change
+
+**Related**: This is a pre-existing issue, NOT introduced by Phase A.5. The run execution feature has always had this limitation.
+
+---
+
 ## Next Steps
 
-After STEP 1 completes:
-- STEP 2: Supabase storage bucket setup
-- STEP 3: Update paper ingestion endpoint
-- STEP 4: Update planner agent tool
-- STEP 5: Update ExcelDatasetGenerator
-- STEP 6: Update GeneratorFactory
-- STEP 7: Update materialization endpoint
-- STEP 8: Frontend modal (deferred)
+### Immediate Testing Priority
 
-**Post-STEP 7 Work**:
-- Address agent prompt limitations (Limitations 1-5 above)
-- Run full TextCNN regression test
-- Test Penalty Shootouts end-to-end
-- Iterate on target column detection
+1. **Test Penalty Shootouts End-to-End** (NEW FUNCTIONALITY):
+   - Upload paper + dataset via `/ingest`
+   - Manually create plan (extractor won't work yet - see Limitation 1)
+   - Materialize notebook
+   - Verify Excel/Supabase download code generated
+   - Verify `requests>=2.31.0` in requirements.txt
+
+2. **Test Dataset-Only Update** (EDGE CASE):
+   - Upload paper without dataset
+   - Upload dataset later via same endpoint
+   - Verify database update works
+   - Verify plan + materialize use uploaded dataset
+
+3. **Fix Supabase .jsonl MIME Type Issue**:
+   - Update `plans` bucket configuration
+   - Re-run TextCNN execution test
+   - Verify artifacts persist successfully
+
+### Post-Testing Work (Phase 1: Enable Tabular Datasets)
+
+**Required to make Penalty Shootouts work end-to-end**:
+1. ❌ Claims schema extension (add 4 new columns to database)
+2. ❌ Extractor prompt update (capture dataset_format, target_column, preprocessing_notes, dataset_url)
+3. ❌ Planner prompt update (uploaded dataset workflow instructions, tool usage guidance)
+4. ❌ ExcelDatasetGenerator enhancement (accept explicit target_column parameter)
+5. ❌ Sandbox execution environment (inject DATASET_URL with fresh signed URL)
+
+### Future Phases
+
+**Phase 2: Improve Reliability**
+- Tabular dataset guidance in planner prompt
+- Categorical encoding strategy selection
+- Train/test split logic for non-HuggingFace datasets
+
+**Phase 3: Multi-Modality Support**
+- Vision dataset support
+- Preprocessing hints utilization
+- Auto-download from dataset URLs
+
+**Phase 4: Frontend Integration**
+- Dataset upload modal (deferred - see INTEGRATION_MILESTONE.md Phase A.5)
