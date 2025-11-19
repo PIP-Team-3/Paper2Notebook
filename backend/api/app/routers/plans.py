@@ -892,7 +892,7 @@ async def materialize_plan_assets(
     with traced_run("p2n.materialize") as span:
         with traced_subspan(span, "p2n.materialize.codegen"):
             notebook_bytes = build_notebook_bytes(plan, plan_id, paper=paper)
-            requirements_text, env_hash = build_requirements(plan)
+            requirements_text, env_hash = build_requirements(plan, paper=paper)
 
         # Validate notebook before persisting
         with traced_subspan(span, "p2n.materialize.validate"):

@@ -46,7 +46,9 @@ extract_test.log
 
 # Integration milestone test papers and datasets
 Soccer Paper/
-INTEGRATION_MILESTONE.md
+
+# Archived documentation (historical reference)
+archived_docs/
 
 # Local scripts
 scripts/

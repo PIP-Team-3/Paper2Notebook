@@ -25,7 +25,7 @@ def _primary_metric(plan: PlanDocumentV11) -> str:
     return plan.metrics[0].name if plan.metrics else "metric"
 
 
-def build_requirements(plan: PlanDocumentV11) -> Tuple[str, str]:
+def build_requirements(plan: PlanDocumentV11, paper=None) -> Tuple[str, str]:
     """
     Build requirements.txt content from plan using generator requirements.
 
@@ -34,13 +34,17 @@ def build_requirements(plan: PlanDocumentV11) -> Tuple[str, str]:
     2. Dataset generator requirements
     3. Model generator requirements
 
+    Args:
+        plan: The plan document
+        paper: Optional paper record with uploaded dataset (Phase A.5)
+
     Returns:
         Tuple of (requirements_text, env_hash)
     """
     requirements = set(DEFAULT_REQUIREMENTS)
 
-    # Get generators and collect their requirements
-    dataset_gen = GeneratorFactory.get_dataset_generator(plan)
+    # Get generators and collect their requirements (Phase A.5: pass paper context)
+    dataset_gen = GeneratorFactory.get_dataset_generator(plan, paper=paper)
     model_gen = GeneratorFactory.get_model_generator(plan)
 
     dataset_reqs = dataset_gen.generate_requirements(plan)
