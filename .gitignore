@@ -44,6 +44,10 @@ ingest_results.txt
 upload_results.txt
 extract_test.log
 
+# Integration milestone test papers and datasets
+Soccer Paper/
+INTEGRATION_MILESTONE.md
+
 # Local scripts
 scripts/
 

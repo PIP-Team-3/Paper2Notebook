@@ -28,6 +28,8 @@ class DatasetSource(Enum):
     SKLEARN = "sklearn"  # Bundled with sklearn (tiny, always available)
     TORCHVISION = "torchvision"  # Downloads to cache_dir on first use
     HUGGINGFACE = "huggingface"  # Streaming or cached download
+    EXCEL = "excel"  # Excel files (.xls, .xlsx) loaded with pandas
+    CSV = "csv"  # CSV files loaded with pandas
     SYNTHETIC = "synthetic"  # Generated on-the-fly (no download)
 
 
@@ -199,6 +201,22 @@ DATASET_REGISTRY: Dict[str, DatasetMetadata] = {
         typical_size_mb=169,
         license="MIT",
         aliases=("cifar_100", "cifar-100"),
+    ),
+    # ============================================================
+    # EXCEL DATASETS (User-Uploaded Tabular Data)
+    # ============================================================
+    "penaltyshootouts": DatasetMetadata(
+        source=DatasetSource.EXCEL,
+        load_function="read_excel",  # pandas.read_excel
+        typical_size_mb=1,
+        license="AER",  # American Economic Review data
+        aliases=(
+            "penalty_shootouts",
+            "penalty-shootouts",
+            "soccer_penalties",
+            "soccer_shootouts",
+            "aer20081092",
+        ),
     ),
 }
 
