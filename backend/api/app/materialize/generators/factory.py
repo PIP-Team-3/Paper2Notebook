@@ -88,8 +88,7 @@ class GeneratorFactory:
                 paper.dataset_format,
             )
             # For now, assume all uploaded datasets are Excel (future: support CSV)
-            # Import here to create minimal metadata for uploaded dataset
-            from .dataset_registry import DatasetMetadata, DatasetSource
+            from .dataset_registry import DatasetMetadata
 
             uploaded_metadata = DatasetMetadata(
                 source=DatasetSource.EXCEL,
