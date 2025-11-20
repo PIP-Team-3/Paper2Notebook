@@ -49,6 +49,12 @@ class ClaimCreate(BaseModel):
     created_by: Optional[str] = None
     created_at: datetime
 
+    # Phase 1: Dataset metadata fields (Sprint 1)
+    dataset_format: Optional[str] = None       # "huggingface", "excel", "csv", "torchvision"
+    target_column: Optional[str] = None        # "Win", "sentiment", "default"
+    preprocessing_notes: Optional[str] = None  # Free text preprocessing hints
+    dataset_url: Optional[str] = None          # Optional download URL (future)
+
     model_config = {
         "extra": "ignore",
     }
