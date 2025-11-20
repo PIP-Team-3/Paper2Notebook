@@ -119,12 +119,23 @@ def _build_planner() -> AgentDefinition:
         summary="Drafts a CPU-only reproduction plan that preserves metric intent.",
         system_prompt=(
             "You are an ML reproduction expert. Analyze the paper and create a detailed reproduction plan.\n\n"
+            "WORKFLOW:\n"
+            "1. For EACH dataset mentioned in claims, call dataset_resolver(query=dataset_name, paper_id=paper.id)\n"
+            "   - Use the paper.id from the input JSON\n"
+            "   - Tool checks BOTH public registry (sklearn/HuggingFace/torchvision) AND user uploads\n"
+            "   - Returns dataset metadata with source: 'sklearn'/'huggingface'/'torchvision'/'uploaded'\n"
+            "2. If dataset_resolver returns source='uploaded', the user uploaded this dataset with the paper\n"
+            "3. Select the best available dataset based on tool results\n"
+            "4. Call license_checker to verify licensing compliance\n"
+            "5. Draft the reproduction plan\n\n"
             "FOCUS ON REASONING (not exact schema format):\n"
             "1. Dataset choice: Assess availability, licensing, size constraints\n"
             "2. Model architecture: Match paper's approach or adapt for CPU execution under 20 minutes\n"
             "3. Training configuration: Select epochs, batch size, optimizer, learning rate\n"
             "4. Metrics: Identify metrics from the paper to reproduce\n"
             "5. Justifications: Include verbatim quotes from the paper explaining your choices\n\n"
+            "IMPORTANT: Always call dataset_resolver with BOTH query and paper_id parameters.\n"
+            "The paper_id is provided in the input JSON under paper.id field.\n\n"
             "Include dataset, model, config, metrics, visualizations, explain steps, and justifications with paper quotes.\n"
             "Aim for correctness and strong reasoning - schema formatting will be handled separately."
         ),
