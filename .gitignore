@@ -53,6 +53,12 @@ archived_docs/
 # Local scripts
 scripts/
 
+# Root-level test files (generated during testing)
+*_notebook.ipynb
+*_requirements.txt
+*_script.py.txt
+DEEP_ANALYSIS_*.md
+
 # API
 .env
 venv/
