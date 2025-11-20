@@ -1,7 +1,212 @@
 # Phase 1 Testing Analysis & Fix Strategy
 
 **Date**: 2025-11-19
-**Status**: Testing in progress - discovered architectural issue
+**Status**: ⚠️ **BLOCKED** - Dataset upload metadata not saved to database
+**Updated**: 2025-11-19 21:00 - Identified root cause
+
+---
+
+## 🚨 CURRENT BLOCKER
+
+**Issue**: Plan generation fails with "E_PLAN_NO_ALLOWED_DATASETS"
+
+**Root Cause (CONFIRMED)**: **Dataset name mismatch** between extractor and uploaded file
+
+**Evidence from database (VERIFIED 2025-11-20)**:
+- ✅ `papers` table HAS the 3 dataset columns (`dataset_storage_path`, `dataset_format`, `dataset_original_filename`)
+- ✅ Columns are POPULATED for paper ID `19bd124a-2f1c-48dd-a7fb-71f86b4239a2`
+- ✅ Upload infrastructure (Phase A.5) is working correctly
+
+**The Name Mismatch Problem**:
+```
+Extractor captured:     "Penalty Shoot-out Dataset"  (from paper text)
+Uploaded filename:      "AER20081092_Data.xls"
+Filename stem:          "AER20081092_Data"
+
+Normalized extractor:   "penalty_shoot_out_dataset"
+Normalized filename:    "aer20081092_data"
+
+❌ THESE DON'T MATCH!
+```
+
+Our `classify_dataset()` checks:
+```python
+if normalized_uploaded == normalized_query:  # FALSE!
+    return RESOLVED
+```
+
+**Server logs confirm this**:
+```
+planner.resolution.non_resolved dataset=Penalty Shoot-out Dataset status=unknown
+  reason=Dataset not found in registry
+```
+
+No `dataset_resolution.resolved_upload` log = Step 3.5 check failed due to name mismatch
+
+---
+
+## 🔧 SOLUTION OPTIONS
+
+### Option 1: Always Match Uploaded Dataset (SIMPLEST)
+**Logic**: If paper has `dataset_storage_path`, consider it RESOLVED regardless of name
+```python
+# Step 3.5: Check paper uploads (Phase 1)
+if paper and paper.dataset_storage_path:
+    logger.info(
+        "dataset_resolution.resolved_upload paper_id=%s filename=%s",
+        paper.id,
+        paper.dataset_original_filename
+    )
+    return DatasetResolutionResult(
+        status=ResolutionStatus.RESOLVED,
+        dataset_name=dataset_name,
+        canonical_name=dataset_name,  # Use extractor's name
+        reason=f"Dataset uploaded with paper: {paper.dataset_original_filename}",
+        metadata={"source": "uploaded", "format": paper.dataset_format}
+    )
+```
+
+**Pros**:
+- Simple, always works
+- User uploaded dataset with THIS paper → must be the right one
+- Handles any naming convention
+
+**Cons**:
+- If user uploads multiple papers with datasets, might match wrong one
+- No validation that extractor found the right dataset name
+
+---
+
+### Option 2: Fuzzy Name Matching (MORE ROBUST)
+**Logic**: Check if normalized names are "similar enough" (substring match, edit distance)
+```python
+if paper and paper.dataset_storage_path:
+    uploaded_stem = Path(paper.dataset_original_filename or "").stem
+    normalized_uploaded = normalize_dataset_name(uploaded_stem)
+    normalized_query = normalize_dataset_name(dataset_name)
+
+    # Try exact match first
+    if normalized_uploaded == normalized_query:
+        return RESOLVED
+
+    # Try substring match (either direction)
+    if normalized_uploaded in normalized_query or normalized_query in normalized_uploaded:
+        logger.info("dataset_resolution.fuzzy_match uploaded=%s query=%s",
+                   normalized_uploaded, normalized_query)
+        return RESOLVED
+
+    # Try word overlap (e.g., "penalty" in both)
+    uploaded_words = set(normalized_uploaded.split('_'))
+    query_words = set(normalized_query.split('_'))
+    overlap = uploaded_words & query_words
+    if len(overlap) >= 2:  # At least 2 common words
+        logger.info("dataset_resolution.word_overlap words=%s", overlap)
+        return RESOLVED
+```
+
+**Pros**:
+- More intelligent matching
+- Catches common patterns (abbreviations, reordering)
+
+**Cons**:
+- More complex logic
+- False positives possible
+
+---
+
+### Option 3: Store Claim-to-Upload Mapping (CLEANEST)
+**Logic**: When user uploads dataset with paper, store this association in claims table
+```python
+# In papers.py ingest endpoint, AFTER dataset upload:
+if dataset_storage_path and existing_claims:
+    # Update all claims for this paper to mark dataset as uploaded
+    for claim in existing_claims:
+        if claim.dataset_name:  # Has a dataset reference
+            db.update_claim(
+                claim_id=claim.id,
+                dataset_uploaded_with_paper=True  # NEW COLUMN in claims table
+            )
+```
+
+**Pros**:
+- Explicit, no guessing
+- Works for papers with multiple datasets
+
+**Cons**:
+- Requires new database column
+- Claims might not exist yet during upload (extraction happens after)
+
+---
+
+## ⚠️ CRITICAL SAFETY NOTE
+
+**DO NOT remove the name matching guard!**
+
+Matching every uploaded dataset unconditionally would allow a paper with an unrelated upload to accidentally satisfy a different claim. The filename stem comparison is the safety guard that prevents wrong matches.
+
+The issue isn't the guard itself - **it's that the guard never fires**.
+
+---
+
+## 🔍 DIAGNOSTIC APPROACH (CORRECT)
+
+### What's Actually Blocking Us
+
+Two possibilities:
+1. **Data not populated**: Supabase record doesn't have `dataset_storage_path`/`dataset_format`/`dataset_original_filename`
+2. **Normalization mismatch**: Filename stem doesn't match claim dataset name after normalization
+
+### Diagnostic Steps
+
+#### Step 1: Add Debug Logging (DONE)
+Added comprehensive logging in `dataset_resolution.py` Step 3.5:
+- Log paper_id
+- Log query (raw claim dataset name)
+- Log normalized_query
+- Log uploaded_filename
+- Log uploaded_stem
+- Log normalized_uploaded
+- Log match result (True/False)
+
+This will tell us **exactly why the match is failing**.
+
+#### Step 2: Restart Server & Retest
+```bash
+# Server restarted with new logging
+# Now retest plan generation
+```
+
+#### Step 3: Analyze Logs
+Look for `dataset_resolution.upload_check` log entry to see:
+```
+dataset_resolution.upload_check paper_id=... query="Penalty Shoot-out Dataset"
+  normalized_query="penalty_shoot_out_dataset" uploaded_filename="AER20081092_Data.xls"
+  uploaded_stem="AER20081092_Data" normalized_uploaded="aer20081092_data" match=False
+```
+
+This confirms the normalization mismatch.
+
+#### Step 4: Fix Based on Data
+
+**If dataset columns are NULL**:
+- Bug in upload endpoint (didn't save metadata)
+- Fix: Ensure `db.insert_paper()` saves dataset fields
+
+**If normalization doesn't match**:
+- Current matching: exact match only
+- Options:
+  - Substring matching ("penalty" in both)
+  - Word overlap (≥2 common words)
+  - Fuzzy matching (edit distance)
+  - Multiple upload support (allow user to label uploads)
+
+---
+
+## RECOMMENDED SOLUTION: Diagnose First, Then Fix
+
+**Step 1**: Look at server logs after retry
+**Step 2**: Confirm whether it's data issue or matching issue
+**Step 3**: Apply appropriate fix (don't blindly remove safety guards)
 
 ---
 
@@ -308,4 +513,54 @@ resolution = resolve_dataset_for_plan(
 1. Should we also strengthen the LLM prompt as a backup?
 2. Do we need to update the sanitizer to recognize "uploaded" as a valid source?
 3. Should the GET /papers/{id}/claims endpoint return the new metadata fields?
+
+
+---
+
+## Summary of Session Progress
+
+### What Works ✅
+1. **Schema Migration**: Claims table has 4 new metadata columns
+2. **Extractor**: Captures `dataset_format` and `target_column` from papers
+3. **Upload API**: Accepts `dataset_file` parameter, stores to Supabase storage
+4. **Python Resolution Fix**: `classify_dataset()` now checks `paper.dataset_storage_path`
+
+### What's Broken ❌
+1. **Upload endpoint doesn't save metadata to database** - Returns `dataset_uploaded: true` but columns are NULL
+2. **Plan generation fails** - Sanitizer rejects plan because dataset not recognized
+
+### Critical Path Forward
+
+**Immediate**: Verify database state with SQL query above
+
+**If columns are NULL** (most likely):
+- Bug is in `backend/api/app/routers/papers.py` ingest endpoint
+- Upload stores file to Supabase storage but doesn't UPDATE paper record
+- Need to add database UPDATE after storage upload
+- Fix location: Around line 230-280 in papers.py where dataset upload happens
+
+**If columns have values**:
+- Name normalization mismatch between:
+  - Claim dataset name: "Penalty Shoot-out Dataset"  
+  - Uploaded filename: "AER20081092_Data.xls" → stem: "AER20081092_Data"
+- These don't match! Need different matching strategy
+
+### Sanitizer Issue (User Warning)
+User warned about sanitization issues. The sanitizer runs AFTER our resolution fix and may have its own blocklist/validation that rejects uploaded datasets even if marked as "resolved". Need to check `sanitizer.py` for how it handles `source="uploaded"`.
+
+### Files Modified This Session
+- `backend/api/app/agents/schemas.py` - Added extractor metadata fields
+- `backend/api/app/agents/types.py` - Added dataclass metadata fields
+- `backend/api/app/agents/definitions.py` - Enhanced extractor prompt
+- `backend/api/app/routers/papers.py` - Map metadata in claim creation
+- `backend/api/app/materialize/dataset_resolution.py` - Check paper uploads
+- `backend/api/app/routers/plans.py` - Pass paper to resolution
+
+### Commits
+- `b68f8b0` - Sprint 3: Extractor captures metadata (Pydantic)
+- `da6e4ca` - Fix: Add metadata to dataclass
+- `c49b05b` - Fix: Python resolution checks uploads
+
+### Context Remaining
+~68K tokens - Getting low, may need new session soon
 

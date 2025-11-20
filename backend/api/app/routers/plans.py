@@ -617,7 +617,8 @@ The plan should use {first_dataset} with a simple baseline model suitable for CP
                 plan_raw, sanitizer_warnings = sanitize_plan(
                     raw_plan=plan_raw,
                     registry=DATASET_REGISTRY,
-                    policy={"budget_minutes": policy_budget}
+                    policy={"budget_minutes": policy_budget},
+                    paper=paper  # Phase 1: Pass paper to check uploaded datasets
                 )
                 logger.info(
                     "planner.sanitize.complete warnings_count=%d dataset=%s",

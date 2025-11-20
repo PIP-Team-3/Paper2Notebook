@@ -190,7 +190,7 @@ def is_dataset_allowed(name: str, registry: Dict[str, DatasetMetadata]) -> bool:
     return meta is not None
 
 
-def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Optional[str]:
+def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata], paper=None) -> Optional[str]:
     """
     Resolve dataset name to canonical registry ID.
 
@@ -202,6 +202,7 @@ def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Opt
     Args:
         name: Raw dataset name from plan
         registry: Dataset registry
+        paper: Optional paper record (Phase 1 - check for uploaded datasets)
 
     Returns:
         Canonical dataset name if found, None if not in registry or blocked
@@ -224,6 +225,18 @@ def resolve_dataset_name(name: str, registry: Dict[str, DatasetMetadata]) -> Opt
     if normalized in BLOCKED_DATASETS:
         logger.info(f"sanitizer.dataset.blocked name={name} normalized={normalized}")
         return None
+
+    # Phase 1: Check paper uploads BEFORE registry lookup
+    # If paper has uploaded dataset, accept this dataset name (trust user intent)
+    if paper and paper.dataset_storage_path:
+        logger.info(
+            "sanitizer.dataset.uploaded name=%s filename=%s format=%s",
+            name,
+            paper.dataset_original_filename,
+            paper.dataset_format
+        )
+        # Use extractor's dataset name as canonical (filename doesn't matter)
+        return name
 
     # Lookup in registry (handles aliases)
     meta = lookup_dataset(cleaned_name)
@@ -294,6 +307,7 @@ def sanitize_plan(
     raw_plan: Dict[str, Any],
     registry: Dict[str, DatasetMetadata],
     policy: Dict[str, Any],
+    paper=None,
 ) -> Tuple[Dict[str, Any], List[str]]:
     """
     Sanitize and normalize plan JSON from Stage 2.
@@ -308,6 +322,7 @@ def sanitize_plan(
         raw_plan: Raw plan dict from Stage 2 (may have type/schema issues)
         registry: Dataset registry for name resolution
         policy: Policy dict (budget_minutes, etc.)
+        paper: Optional paper record (Phase 1 - check for uploaded datasets)
 
     Returns:
         Tuple of (sanitized_plan, warnings)
@@ -357,7 +372,7 @@ def sanitize_plan(
         raw_name = dataset_obj.get("name")
 
         if raw_name:
-            canonical = resolve_dataset_name(raw_name, registry)
+            canonical = resolve_dataset_name(raw_name, registry, paper)
             if canonical is None:
                 # Dataset blocked or unknown
                 if normalize_dataset_name(raw_name) in BLOCKED_DATASETS:

@@ -191,6 +191,18 @@ def classify_dataset(
         normalized_uploaded = registry_normalize(uploaded_stem)
         normalized_query = registry_normalize(dataset_name)
 
+        # DEBUG: Log normalization to diagnose matching failures
+        logger.info(
+            "dataset_resolution.upload_check paper_id=%s query=%s normalized_query=%s uploaded_filename=%s uploaded_stem=%s normalized_uploaded=%s match=%s",
+            paper.id,
+            dataset_name,
+            normalized_query,
+            paper.dataset_original_filename,
+            uploaded_stem,
+            normalized_uploaded,
+            normalized_uploaded == normalized_query
+        )
+
         if normalized_uploaded == normalized_query:
             logger.info(
                 "dataset_resolution.resolved_upload dataset=%s filename=%s",
