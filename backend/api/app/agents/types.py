@@ -19,6 +19,11 @@ class ExtractedClaim:
     units: str | None
     method_snippet: str | None
     citation: Citation
+    # Phase 1: Dataset metadata fields (Sprint 3)
+    dataset_format: str | None = None
+    target_column: str | None = None
+    preprocessing_notes: str | None = None
+    dataset_url: str | None = None
 
 
 @dataclass(slots=True)
