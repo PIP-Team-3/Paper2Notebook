@@ -805,6 +805,11 @@ async def run_extractor(
                     method_snippet=claim.method_snippet,
                     source_citation=claim.citation.source_citation,
                     confidence=claim.citation.confidence,
+                    # Phase 1: Dataset metadata fields (Sprint 3)
+                    dataset_format=claim.dataset_format,
+                    target_column=claim.target_column,
+                    preprocessing_notes=claim.preprocessing_notes,
+                    dataset_url=claim.dataset_url,
                     created_by=None,  # TODO: get from context when auth is implemented,
                     created_at=datetime.now(timezone.utc),
                 )

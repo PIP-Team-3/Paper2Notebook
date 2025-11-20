@@ -61,6 +61,19 @@ def _build_extractor() -> AgentDefinition:
             "- Exclude vague/non-quantified statements (e.g., 'better', 'state of the art') unless explicitly quantified.\n"
             "- If no quantitative, reproducible claims exist after File Search, call emit_extractor_output with {\"claims\": []}.\n"
             "- Do NOT output any prose or inline JSON; only tool calls.\n"
+            "\n"
+            "Dataset Metadata (Phase 1 - capture if mentioned in paper):\n"
+            "For EACH claim, try to infer and include these optional fields:\n"
+            "- dataset_format: Infer format from context:\n"
+            "  • 'huggingface' if from HuggingFace datasets library (e.g., GLUE, SST-2, IMDB, AG News)\n"
+            "  • 'excel' if paper mentions .xls or .xlsx files\n"
+            "  • 'csv' if paper mentions CSV files or tabular data files\n"
+            "  • 'torchvision' if from torchvision.datasets (e.g., MNIST, CIFAR-10, CIFAR-100)\n"
+            "  • 'unknown' if unclear or not mentioned\n"
+            "- target_column: Name of prediction variable (e.g., 'sentiment', 'Win', 'default', 'label')\n"
+            "  • Look for phrases like 'predicting [X]', 'target variable [Y]', 'outcome column'\n"
+            "- preprocessing_notes: Brief preprocessing steps if explicitly mentioned (e.g., 'categorical encoding', 'text tokenization')\n"
+            "- dataset_url: Dataset download URL if provided in paper (e.g., Kaggle links, GitHub repos)\n"
         ),
         output_type=ExtractorOutput,
         input_guardrail=Guardrail(

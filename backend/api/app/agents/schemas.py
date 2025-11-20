@@ -29,6 +29,12 @@ class ExtractedClaimModel(BaseModel):
     method_snippet: Optional[str] = Field(None, max_length=1000, description="Brief method description")
     citation: CitationModel = Field(..., description="Source citation with confidence")
 
+    # Phase 1: Dataset metadata fields (Sprint 3)
+    dataset_format: Optional[str] = Field(None, description="Dataset format: huggingface/excel/csv/torchvision/unknown")
+    target_column: Optional[str] = Field(None, description="Prediction target column name (e.g., Win, sentiment, label)")
+    preprocessing_notes: Optional[str] = Field(None, description="Optional preprocessing hints from paper")
+    dataset_url: Optional[str] = Field(None, description="Optional dataset download URL from paper")
+
     class Config:
         extra = "forbid"
 
