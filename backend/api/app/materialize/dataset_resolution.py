@@ -9,6 +9,7 @@ See: docs/current/milestones/dataset_resolution_agent.md
 
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 import re
 import logging
@@ -98,7 +99,8 @@ def is_complex_dataset(dataset_name: str) -> bool:
 def classify_dataset(
     dataset_name: str,
     registry: Dict[str, Any],
-    blocked_list: Set[str]
+    blocked_list: Set[str],
+    paper=None
 ) -> DatasetResolutionResult:
     """
     Classify dataset resolution status.
@@ -107,12 +109,14 @@ def classify_dataset(
     1. Normalize name (lowercase, strip punctuation)
     2. Check blocked list → BLOCKED
     3. Check registry (exact + aliases) → RESOLVED
-    4. Check complexity heuristics → COMPLEX vs UNKNOWN
+    4. Check paper uploads (Phase 1) → RESOLVED
+    5. Check complexity heuristics → COMPLEX vs UNKNOWN
 
     Args:
         dataset_name: Raw dataset name from claim/plan
         registry: Dataset registry (DATASET_REGISTRY)
         blocked_list: Set of blocked dataset names (BLOCKED_DATASETS)
+        paper: Optional paper record to check for uploaded datasets (Phase 1)
 
     Returns:
         DatasetResolutionResult with classification outcome
@@ -179,6 +183,28 @@ def classify_dataset(
             metadata={"source": dataset_meta.source.value, "aliases": list(dataset_meta.aliases)}
         )
 
+    # Step 3.5: Check paper uploads (Phase 1)
+    if paper and paper.dataset_storage_path:
+        from app.materialize.generators.dataset_registry import normalize_dataset_name as registry_normalize
+
+        uploaded_stem = Path(paper.dataset_original_filename or "").stem
+        normalized_uploaded = registry_normalize(uploaded_stem)
+        normalized_query = registry_normalize(dataset_name)
+
+        if normalized_uploaded == normalized_query:
+            logger.info(
+                "dataset_resolution.resolved_upload dataset=%s filename=%s",
+                dataset_name,
+                paper.dataset_original_filename
+            )
+            return DatasetResolutionResult(
+                status=ResolutionStatus.RESOLVED,
+                dataset_name=dataset_name,
+                canonical_name=normalized_query,
+                reason=f"Dataset uploaded with paper: {paper.dataset_original_filename}",
+                metadata={"source": "uploaded", "format": paper.dataset_format or "unknown"}
+            )
+
     # Step 4: Not in registry - check complexity
     if is_complex_dataset(dataset_name):
         logger.info(
@@ -215,7 +241,8 @@ def classify_dataset(
 def resolve_dataset_for_plan(
     plan_dict: Dict[str, Any],
     registry: Dict[str, Any],
-    blocked_list: Set[str]
+    blocked_list: Set[str],
+    paper=None
 ) -> Optional[DatasetResolutionResult]:
     """
     Extract dataset from plan dict and classify it.
@@ -226,6 +253,7 @@ def resolve_dataset_for_plan(
         plan_dict: Stage 2 planner output (before sanitization)
         registry: Dataset registry
         blocked_list: Set of blocked datasets
+        paper: Optional paper record to check for uploaded datasets (Phase 1)
 
     Returns:
         Resolution result, or None if no dataset in plan
@@ -237,4 +265,4 @@ def resolve_dataset_for_plan(
         logger.warning("dataset_resolution.no_dataset plan_keys=%s", list(plan_dict.keys()))
         return None
 
-    return classify_dataset(dataset_name, registry, blocked_list)
+    return classify_dataset(dataset_name, registry, blocked_list, paper=paper)

@@ -568,7 +568,8 @@ The plan should use {first_dataset} with a simple baseline model suitable for CP
                 resolution = resolve_dataset_for_plan(
                     plan_dict=plan_raw,
                     registry=DATASET_REGISTRY,
-                    blocked_list=BLOCKED_DATASETS
+                    blocked_list=BLOCKED_DATASETS,
+                    paper=paper  # Phase 1: Check uploaded datasets
                 )
 
                 if resolution:
