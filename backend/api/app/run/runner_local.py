@@ -155,6 +155,8 @@ def _execute_sync(
     emit: EmitCallable,
     timeout_seconds: int,
     seed: int = 42,
+    dataset_bytes: bytes | None = None,
+    dataset_filename: str | None = None,
 ) -> NotebookRunResult:
     logs: List[str] = []
     events_text = ""
@@ -171,6 +173,12 @@ def _execute_sync(
 
         requirements_path = tmp_path / "requirements.txt"
         requirements_path.write_bytes(requirements_bytes)
+
+        # Write dataset if provided
+        if dataset_bytes and dataset_filename:
+            dataset_path = tmp_path / dataset_filename
+            dataset_path.write_bytes(dataset_bytes)
+            emit("log_line", {"message": f"Dataset saved: {dataset_filename}"})
 
         # Create virtual environment
         venv_path = tmp_path / "venv"
@@ -307,7 +315,9 @@ async def execute_notebook(
     emit: EmitCallable,
     timeout_minutes: int,
     seed: int = 42,
+    dataset_bytes: bytes | None = None,
+    dataset_filename: str | None = None,
 ) -> NotebookRunResult:
     timeout_minutes = max(1, min(timeout_minutes, 25))
     timeout_seconds = timeout_minutes * 60
-    return await asyncio.to_thread(_execute_sync, notebook_bytes, requirements_bytes, emit, timeout_seconds, seed)
+    return await asyncio.to_thread(_execute_sync, notebook_bytes, requirements_bytes, emit, timeout_seconds, seed, dataset_bytes, dataset_filename)

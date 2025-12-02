@@ -5,6 +5,8 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from supabase import create_client, Client
+from pydantic import BaseModel
+from typing import Optional
 
 load_dotenv()
 
@@ -51,9 +53,10 @@ def read_paper(id):
 async def upload_paper(
     file: UploadFile = File(...),
     title: str = Form(None),
+    dataset_file: UploadFile = File(None),
 ):
     """
-    Upload a paper PDF and ingest it via the backend API.
+    Upload a paper PDF and optional dataset file, then ingest via the backend API.
     Calls POST /api/v1/papers/ingest on the backend service.
     """
     import httpx
@@ -71,6 +74,12 @@ async def upload_paper(
         }
         if title:
             form_data["title"] = (None, title)
+
+        # Add optional dataset file if provided
+        if dataset_file:
+            dataset_contents = await dataset_file.read()
+            await dataset_file.seek(0)
+            form_data["dataset_file"] = (dataset_file.filename, dataset_contents, dataset_file.content_type)
 
         # Call the backend ingest endpoint
         async with httpx.AsyncClient() as client:
@@ -95,8 +104,8 @@ async def upload_paper(
 
         return result
 
-    except HTTPException:
-        raise
+    # except HTTPException:
+    #     raise
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -225,8 +234,13 @@ async def extract_claims(paper_id: str):
         },
     )
 
-@app.get("/papers/{paper_id}/plan")
-async def generate_plan(paper_id: str):
+# Request model for plan generation with selected claims
+class GeneratePlanRequest(BaseModel):
+    claim_ids: list[str]
+    budget_minutes: Optional[int] = 20
+
+@app.post("/papers/{paper_id}/plan")
+async def generate_plan(paper_id: str, request: GeneratePlanRequest):
     """
     Generate a reproduction execution plan using LLM reasoning.
     Calls POST /api/v1/papers/{paper_id}/plan on the backend service.
@@ -240,29 +254,35 @@ async def generate_plan(paper_id: str):
     plan_endpoint = f"{backend_url}/api/v1/papers/{paper_id}/plan"
 
     try:
-        # Get claims for this paper
-        claims_response = supabase.table("claims").select("*").eq("paper_id", paper_id).execute()
+        # Validate that claim IDs were provided
+        if not request.claim_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="No claims selected. Please select at least one claim for plan generation."
+            )
+
+        # Get selected claims from the database
+        claims_response = supabase.table("claims").select("*").in_("id", request.claim_ids).execute()
         claims_data = claims_response.data
 
         if not claims_data:
             raise HTTPException(
                 status_code=400,
-                detail="No claims found for this paper. Extract claims first before planning."
+                detail="Selected claims not found in database."
             )
 
         # Transform claims to the format expected by backend
         claims = []
         for claim in claims_data:
-            if claim.get('dataset_name') == 'SST-2':
-                claims.append({
-                    "dataset": claim.get("dataset_name"),
-                    "split": claim.get("split"),
-                    "metric": claim.get("metric_name"),
-                    "value": claim.get("metric_value"),
-                    "units": claim.get("units"),
-                    "citation": claim.get("source_citation"),
-                    "confidence": claim.get("confidence")
-                })
+            claims.append({
+                "dataset": claim.get("dataset_name"),
+                "split": claim.get("split"),
+                "metric": claim.get("metric_name"),
+                "value": claim.get("metric_value"),
+                "units": claim.get("units"),
+                "citation": claim.get("source_citation"),
+                "confidence": claim.get("confidence")
+            })
 
 
         # Update the paper stage to "plan" in the database
@@ -274,7 +294,7 @@ async def generate_plan(paper_id: str):
         # Call the backend plan endpoint
         payload = {
             "claims": claims,
-            "budget_minutes": 20
+            "budget_minutes": request.budget_minutes
         }
 
 
@@ -298,21 +318,44 @@ async def generate_plan(paper_id: str):
             detail=f"Plan generation failed: {str(e)}"
         )
 
-@app.get("/papers/{paper_id}/latest-plan")
-def get_latest_plan(paper_id: str):
+@app.get("/papers/{paper_id}/plans")
+def list_plans(paper_id: str):
     """
-    Get the latest plan for a paper by querying the plans table
-    and returning the plan with the most recent created_at date.
+    Get all plans for a paper, ordered by creation date (newest first).
+    Returns a list of plan summaries with id, version, created_at, status, and budget_minutes.
     """
     try:
         # Query plans table for this paper, ordered by created_at descending
-        plans_response = supabase.table("plans").select("*").eq("paper_id", paper_id).order("created_at", desc=True).limit(1).execute()
+        plans_response = supabase.table("plans").select("id, version, created_at, status, budget_minutes").eq("paper_id", paper_id).order("created_at", desc=True).execute()
+        plans_data = plans_response.data
+
+        if not plans_data:
+            return []
+
+        return plans_data
+
+    except Exception as e:
+        print(f"Error in list_plans: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve plans: {str(e)}"
+        )
+
+@app.get("/papers/{paper_id}/plans/{plan_id}")
+def get_plan(paper_id: str, plan_id: str):
+    """
+    Get a specific plan by ID and paper ID.
+    Returns the full plan with plan_json, metadata, and status.
+    """
+    try:
+        # Query plans table for this specific plan
+        plans_response = supabase.table("plans").select("*").eq("paper_id", paper_id).eq("id", plan_id).execute()
         plans_data = plans_response.data
 
         if not plans_data:
             raise HTTPException(
                 status_code=404,
-                detail=f"No plans found for paper {paper_id}. Generate a plan first."
+                detail=f"Plan {plan_id} not found for paper {paper_id}."
             )
 
         return plans_data[0]
@@ -320,45 +363,10 @@ def get_latest_plan(paper_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error in get_latest_plan: {str(e)}")
+        print(f"Error in get_plan: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve plan: {str(e)}"
-        )
-
-@app.get("/papers/{paper_id}/plan-json")
-def get_plan_json(paper_id: str):
-    """
-    Get the latest plan JSON for a paper.
-    Returns the plan_json field from the latest plan.
-    """
-    try:
-        # Query plans table for this paper, ordered by created_at descending
-        plans_response = supabase.table("plans").select("plan_json").eq("paper_id", paper_id).order("created_at", desc=True).limit(1).execute()
-        plans_data = plans_response.data
-
-        if not plans_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No plans found for paper {paper_id}. Generate a plan first."
-            )
-
-        plan_json = plans_data[0].get("plan_json")
-        if not plan_json:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Plan JSON not found for paper {paper_id}."
-            )
-
-        return plan_json
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error in get_plan_json: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve plan JSON: {str(e)}"
         )
 
 @app.get("/plans/{plan_id}/materialize")
@@ -619,13 +627,11 @@ async def get_claims(paper_id: str):
         result = supabase.table("claims").select("*").eq("paper_id", paper_id).execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database query failed: {e.message}")
-    
-    claims = result.data
-        
-    if not claims:    
-        raise HTTPException(status_code=404, detail=f"Claims for the paper with given id {paper_id} not found")
 
-    return claims
+    claims = result.data
+
+    # Return empty array if no claims found (not an error - claims may not be extracted yet)
+    return claims if claims else []
 
 @app.post("/papers/{id}/start")
 def start():

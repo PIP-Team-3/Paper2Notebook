@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Download, AlertCircle, FileCode, FileText } from 'lucide-react';
-import { fetchAPI } from '../../../../../lib/api';
-import { getLatestPlan } from '../_data/fetchers';
+import { fetchAPI } from '../../../../../../lib/api';
 
 interface AssetsResponse {
 	notebook_signed_url: string;
@@ -12,15 +11,13 @@ interface AssetsResponse {
 }
 
 interface GeneratedAssetsProps {
-	paperId: string;
-	planResult: unknown;
+	planId: string;
 	show: boolean;
 	onClose: () => void;
 }
 
 export function GeneratedAssets({
-	paperId,
-	planResult,
+	planId,
 	show,
 	onClose,
 }: GeneratedAssetsProps) {
@@ -29,21 +26,12 @@ export function GeneratedAssets({
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!show || !planResult) return;
+		if (!show) return;
 
 		const fetchAssets = async () => {
 			try {
 				setIsLoading(true);
 				setError(null);
-
-				// Extract plan_id from planResult
-				const plan = await getLatestPlan(paperId);
-
-				const planId = (plan as any)?.id;
-				if (!planId) {
-					setError('Plan ID not found');
-					return;
-				}
 
 				const response: AssetsResponse = await fetchAPI(
 					`/plans/${planId}/download-urls`,
@@ -59,7 +47,7 @@ export function GeneratedAssets({
 		};
 
 		fetchAssets();
-	}, [paperId, planResult, show]);
+	}, [planId, show]);
 
 	if (!show) return null;
 

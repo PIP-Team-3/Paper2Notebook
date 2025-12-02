@@ -268,51 +268,47 @@ class ExcelDatasetGenerator(CodeGenerator):
 
     def generate_imports(self, plan: PlanDocumentV11) -> List[str]:
         """Import statements for Excel dataset loading."""
-        imports = [
+        return [
             "import pandas as pd",
             "from sklearn.preprocessing import LabelEncoder",
             "from sklearn.model_selection import train_test_split",
             "import os",
         ]
 
-        # Add Supabase download dependencies if paper has uploaded dataset
-        if self.paper and self.paper.dataset_storage_path:
-            imports.extend([
-                "import requests",
-                "from io import BytesIO",
-            ])
-
-        return imports
-
     def _generate_uploaded_dataset_code(self, plan: PlanDocumentV11) -> str:
         """
-        Generate code to download and load uploaded dataset from Supabase (Phase A.5).
+        Generate code to load uploaded dataset from local file (Phase A.5).
 
-        Creates a signed URL (24 hour expiration) and downloads the dataset via requests.
-        Loads Excel file from BytesIO buffer.
+        The dataset file is downloaded by the backend and placed in the same directory
+        as the notebook. This avoids environment variable injection and network calls.
         """
         dataset_name = plan.dataset.name
+        # Use the filename that was stored with the paper
+        dataset_filename = self.paper.dataset_original_filename if self.paper else "dataset.xls"
 
         return textwrap.dedent(
             f"""
-        # Dataset: {dataset_name} (Uploaded with paper - Supabase Storage)
+        # Dataset: {dataset_name} (Uploaded with paper - loaded from local file)
         log_event("stage_update", {{"stage": "dataset_load", "dataset": "{dataset_name}"}})
 
-        # Download dataset from Supabase signed URL
-        # URL is injected at runtime by the sandbox (24-hour expiration)
-        dataset_url = os.getenv("DATASET_URL")
-        if not dataset_url:
-            raise ValueError("DATASET_URL environment variable not set. Cannot download uploaded dataset.")
+        # Dataset file is in the same directory as this notebook
+        dataset_path = "{dataset_filename}"
+        if not os.path.exists(dataset_path):
+            raise FileNotFoundError(f"Dataset not found at {{dataset_path}}. Expected file: {dataset_filename}")
 
-        log_event("info", {{"message": f"Downloading dataset from Supabase: {{dataset_url[:50]}}..."}})
+        log_event("info", {{"message": f"Loading dataset from local file: {{dataset_path}}"}})
 
-        response = requests.get(dataset_url, timeout=300)  # 5 minute timeout for large datasets
-        response.raise_for_status()
-
-        # Load Excel file from memory
-        df = pd.read_excel(BytesIO(response.content))
+        # Load Excel file
+        df = pd.read_excel(dataset_path)
 
         log_event("metric_update", {{"metric": "dataset_rows", "value": len(df)}})
+
+        # Clean data: Remove rows with missing values
+        df_clean = df.dropna()
+        if len(df_clean) < len(df):
+            dropped = len(df) - len(df_clean)
+            log_event("info", {{"message": f"Dropped {{dropped}} rows with missing values ({{dropped/len(df)*100:.1f}}%)"}})
+        df = df_clean
 
         # Detect target column (common names)
         target_column = None
@@ -456,18 +452,12 @@ class ExcelDatasetGenerator(CodeGenerator):
 
     def generate_requirements(self, plan: PlanDocumentV11) -> List[str]:
         """Pip requirements for Excel dataset loading."""
-        requirements = [
+        return [
             "pandas==2.2.2",
             "xlrd>=2.0.1",  # For .xls files
             "openpyxl>=3.1.0",  # For .xlsx files
             "scikit-learn==1.5.1",
         ]
-
-        # Add requests for Supabase downloads (Phase A.5)
-        if self.paper and self.paper.dataset_storage_path:
-            requirements.append("requests>=2.31.0")
-
-        return requirements
 
 
 class HuggingFaceDatasetGenerator(CodeGenerator):

@@ -27,6 +27,7 @@ export function mockPaper(paper: z.infer<typeof paperSchema>): PaperSchema {
 export async function uploadPaper(
 	file?: File,
 	url?: string,
+	datasetFile?: File,
 ): Promise<PaperSchema> {
 	const formData = new FormData();
 
@@ -36,6 +37,10 @@ export async function uploadPaper(
 
 	if (url) {
 		formData.append('source_url', url);
+	}
+
+	if (datasetFile) {
+		formData.append('dataset_file', datasetFile);
 	}
 
 	const res = await uploadFileAPI('/papers/', formData);

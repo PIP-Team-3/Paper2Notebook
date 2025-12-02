@@ -12,10 +12,24 @@ export async function generateTests(planId: string): Promise<unknown> {
 	return response;
 }
 
-export async function getLatestPlan(paperId: string): Promise<unknown> {
-	const response = await fetchAPI(`/papers/${paperId}/latest-plan`);
-
+export async function getAllPlans(paperId: string): Promise<unknown> {
+	const response = await fetchAPI(`/papers/${paperId}/plans`);
 	return response;
+}
+
+export async function getPlanById(paperId: string, planId: string): Promise<unknown> {
+	const response = await fetchAPI(`/papers/${paperId}/plans/${planId}`);
+	return response;
+}
+
+export async function getLatestPlan(paperId: string): Promise<unknown> {
+	// Get the first (most recent) plan from the list
+	const plans = await getAllPlans(paperId);
+	if (Array.isArray(plans) && plans.length > 0) {
+		// Get the full plan details for the latest plan
+		return getPlanById(paperId, plans[0].id);
+	}
+	throw new Error('No plans found for this paper');
 }
 
 export async function extractClaimsStream(
@@ -88,9 +102,15 @@ export async function extractClaimsStream(
 	});
 }
 
-export async function generatePlan(paperId: string): Promise<unknown> {
-	const response = await fetchAPI(`/papers/${paperId}/plan`);
-	return response;
+export async function generatePlan(
+	paperId: string,
+	claimIds: string[],
+	budgetMinutes?: number,
+): Promise<unknown> {
+	return postAPI(`/papers/${paperId}/plan`, {
+		claim_ids: claimIds,
+		budget_minutes: budgetMinutes || 20,
+	});
 }
 
 export async function runTests(planId: string): Promise<unknown> {
@@ -103,9 +123,12 @@ export async function streamRunEvents(
 	onLog: (log: {
 		id: string;
 		timestamp: string;
-		type: 'progress' | 'log' | 'error' | 'complete';
+		type: 'progress' | 'log' | 'error' | 'complete' | 'metric';
 		message: string;
 		percent?: number;
+		metric?: string;
+		value?: number;
+		split?: string;
 	}) => void,
 ): Promise<void> {
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -157,9 +180,13 @@ export async function streamRunEvents(
 									| 'progress'
 									| 'log'
 									| 'error'
-									| 'complete',
+									| 'complete'
+									| 'metric',
 								message: logData.message || '',
 								percent: logData.percent,
+								metric: logData.metric,
+								value: logData.value,
+								split: logData.split,
 							};
 							onLog(logEntry);
 						} catch (err) {

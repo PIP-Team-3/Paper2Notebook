@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
-import { fetchAPI } from '../../../../../lib/api';
+import { useEffect, useState, useCallback } from 'react';
+import { AlertCircle } from 'lucide-react';
+import { fetchAPI } from '../../../../../../lib/api';
+import { Checkbox } from '../../../../../../components/ui/checkbox';
 
 interface Claim {
 	id: string;
@@ -20,12 +21,15 @@ interface ClaimsTableProps {
 	paperId: string;
 	show: boolean;
 	onClose: () => void;
+	onSelectionsChange?: (selectedClaims: Set<string>) => void;
+	refreshTrigger?: number;
 }
 
-export function ClaimsTable({ paperId, show, onClose }: ClaimsTableProps) {
+export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refreshTrigger }: ClaimsTableProps) {
 	const [claims, setClaims] = useState<Claim[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		if (!show) return;
@@ -55,30 +59,50 @@ export function ClaimsTable({ paperId, show, onClose }: ClaimsTableProps) {
 		};
 
 		fetchClaims();
-	}, [paperId, show]);
+	}, [paperId, show, refreshTrigger]);
+
+	useEffect(() => {
+		onSelectionsChange?.(selectedClaims);
+	}, [selectedClaims, onSelectionsChange]);
+
+	const handleSelectClaim = useCallback((claimId: string) => {
+		setSelectedClaims((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(claimId)) {
+				newSet.delete(claimId);
+			} else {
+				newSet.add(claimId);
+			}
+			return newSet;
+		});
+	}, []);
+
+	const handleSelectAll = useCallback(() => {
+		setSelectedClaims((prev) => {
+			if (prev.size === claims.length) {
+				return new Set();
+			} else {
+				return new Set(claims.map((c) => c.id));
+			}
+		});
+	}, [claims]);
 
 	if (!show) return null;
 
 	return (
 		<div className="mt-4 rounded-lg border border-gray-200 bg-gray-50">
-			<div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-2">
+			<div className="border-b border-gray-200 bg-gray-100 px-4 py-3">
 				<div>
 					<p className="font-semibold text-gray-700 text-sm">
 						Extracted Claims
 					</p>
 					{claims.length > 0 && (
 						<p className="text-gray-500 text-xs">
-							{claims.length} claim{claims.length !== 1 ? 's' : ''} found
+							{selectedClaims.size} of {claims.length} claim
+							{claims.length !== 1 ? 's' : ''} selected
 						</p>
 					)}
 				</div>
-				<button
-					onClick={onClose}
-					className="text-gray-500 hover:text-gray-700"
-					type="button"
-				>
-					<X className="h-4 w-4" />
-				</button>
 			</div>
 
 			<div className="p-4">
@@ -106,6 +130,12 @@ export function ClaimsTable({ paperId, show, onClose }: ClaimsTableProps) {
 						<table className="w-full border-collapse">
 							<thead>
 								<tr className="border-b border-gray-200 bg-gray-50">
+									<th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs w-12">
+										<Checkbox
+											checked={selectedClaims.size === claims.length && claims.length > 0}
+											onCheckedChange={handleSelectAll}
+										/>
+									</th>
 									<th className="px-3 py-2 text-left font-semibold text-gray-700 text-xs">
 										Dataset
 									</th>
@@ -132,6 +162,12 @@ export function ClaimsTable({ paperId, show, onClose }: ClaimsTableProps) {
 										key={claim.id}
 										className="border-b border-gray-100 hover:bg-gray-50"
 									>
+										<td className="px-3 py-2 text-center">
+											<Checkbox
+												checked={selectedClaims.has(claim.id)}
+												onCheckedChange={() => handleSelectClaim(claim.id)}
+											/>
+										</td>
 										<td className="px-3 py-2 text-gray-800 text-sm">
 											{claim.dataset_name}
 										</td>

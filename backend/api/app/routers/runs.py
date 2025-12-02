@@ -118,6 +118,23 @@ async def _run_plan(
     notebook_key = f"{plan_record.id}/notebook.ipynb"
     requirements_key = f"{plan_record.id}/requirements.txt"
 
+    # Download dataset if paper has upload
+    dataset_bytes = None
+    dataset_filename = None
+
+    paper = db.get_paper(plan_record.paper_id)
+    if paper and paper.dataset_storage_path:
+        from ..dependencies import get_supabase_datasets_storage
+        datasets_storage = get_supabase_datasets_storage()
+
+        try:
+            dataset_bytes = datasets_storage.download(paper.dataset_storage_path)
+            dataset_filename = paper.dataset_original_filename
+            _emit("log_line", {"message": f"Downloaded dataset: {dataset_filename}"})
+        except Exception as exc:
+            logger.warning("Failed to download dataset: %s", exc)
+            _emit("log_line", {"message": f"Warning: Failed to download dataset: {exc}"})
+
     with traced_run("p2n.run.exec") as span:
         started_at = datetime.now(timezone.utc)
         try:
@@ -144,6 +161,8 @@ async def _run_plan(
                     emit=_emit,
                     timeout_minutes=timeout_minutes,
                     seed=seed,
+                    dataset_bytes=dataset_bytes,
+                    dataset_filename=dataset_filename,
                 )
 
             with traced_subspan(span, "p2n.run.artifacts.persist"):

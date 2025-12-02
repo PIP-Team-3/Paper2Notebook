@@ -30,6 +30,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 	const router = useRouter();
 	const [file, setFile] = useState<File | null>(null);
 	const [url, setUrl] = useState('');
+	const [datasetFile, setDatasetFile] = useState<File | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 
@@ -64,6 +65,21 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		}
 	};
 
+	const handleDatasetFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = e.target.files;
+		if (files && files.length > 0) {
+			const selectedFile = files[0];
+			const validExtensions = ['.xlsx', '.xls', '.csv'];
+			const fileName = selectedFile.name.toLowerCase();
+			const isValidType = validExtensions.some(ext => fileName.endsWith(ext));
+			if (isValidType) {
+				setDatasetFile(selectedFile);
+			} else {
+				alert('Please select a valid dataset file (.xlsx, .xls, or .csv)');
+			}
+		}
+	};
+
 	const handleUpload = async () => {
 		if (!file && !url) {
 			return;
@@ -72,12 +88,13 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		setIsUploading(true);
 
 		try {
-			await uploadPaper(file || undefined, url || undefined);
+			await uploadPaper(file || undefined, url || undefined, datasetFile || undefined);
 
 			// Success - close dialog and refresh papers list
 			onOpenChange(false);
 			setFile(null);
 			setUrl('');
+			setDatasetFile(null);
 			router.refresh();
 		} catch (error) {
 			console.error('Upload failed:', error);
@@ -94,6 +111,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		if (!newOpen) {
 			setFile(null);
 			setUrl('');
+			setDatasetFile(null);
 		}
 		onOpenChange(newOpen);
 	};
@@ -121,36 +139,74 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 					</TabsList>
 
 					<TabsContents>
-						<TabsContent value="file">
-							{/* Dropzone */}
-							<button
-								type="button"
-								onDragOver={handleDragOver}
-								onDragLeave={handleDragLeave}
-								onDrop={handleDrop}
-								className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${
-									isDragging
-										? 'border-blue-500 bg-blue-50'
-										: 'border-gray-300 hover:border-gray-400'
-								}`}
-							>
-								<input
-									type="file"
-									accept=".pdf"
-									onChange={handleFileSelect}
-									className="hidden"
-									id="file-input"
-								/>
-								<label htmlFor="file-input" className="cursor-pointer">
-									<Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-									<p className="font-medium text-sm">
-										{file ? file.name : 'Drag and drop your PDF here'}
-									</p>
-									<p className="mt-1 text-gray-500 text-xs">
-										or click to select a file
-									</p>
+						<TabsContent value="file" className="space-y-4">
+							{/* PDF Dropzone */}
+							<div>
+								<label className="mb-2 block font-medium text-sm">
+									Paper PDF
 								</label>
-							</button>
+								<button
+									type="button"
+									onDragOver={handleDragOver}
+									onDragLeave={handleDragLeave}
+									onDrop={handleDrop}
+									className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${
+										isDragging
+											? 'border-blue-500 bg-blue-50'
+											: 'border-gray-300 hover:border-gray-400'
+									}`}
+								>
+									<input
+										type="file"
+										accept=".pdf"
+										onChange={handleFileSelect}
+										className="hidden"
+										id="file-input"
+									/>
+									<label htmlFor="file-input" className="cursor-pointer">
+										<Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+										<p className="font-medium text-sm">
+											{file ? file.name : 'Drag and drop your PDF here'}
+										</p>
+										<p className="mt-1 text-gray-500 text-xs">
+											or click to select a file
+										</p>
+									</label>
+								</button>
+							</div>
+
+							{/* Optional Dataset File Input */}
+							<div>
+								<label className="mb-2 block font-medium text-sm">
+									Dataset (Optional)
+								</label>
+								<label htmlFor="dataset-input" className="block">
+									<div className="w-full cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition hover:border-gray-400">
+										<input
+											type="file"
+											accept=".xlsx,.xls,.csv"
+											onChange={handleDatasetFileSelect}
+											className="hidden"
+											id="dataset-input"
+										/>
+										<p className="text-sm">
+											{datasetFile ? datasetFile.name : 'Click to select a dataset'}
+										</p>
+										<p className="mt-1 text-gray-500 text-xs">
+											.xlsx, .xls, or .csv
+										</p>
+									</div>
+								</label>
+								{datasetFile && (
+									<button
+										type="button"
+										onClick={() => setDatasetFile(null)}
+										className="mt-2 text-sm text-red-600 hover:text-red-800"
+									>
+										Remove dataset
+									</button>
+								)}
+							</div>
 						</TabsContent>
 
 						<TabsContent value="url">

@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import type { LogEntry } from './step-types';
+import type { LogEntry } from '../../_components/step-types';
 
 interface LogsDisplayProps {
 	title: string;
