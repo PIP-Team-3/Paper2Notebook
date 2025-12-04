@@ -24,11 +24,8 @@ export function TabNavigation({
 	const pathname = usePathname();
 	const router = useRouter();
 
-	// Determine active tab from current pathname
 	const getActiveTab = () => {
 		const pathSegments = pathname.split('/').filter(Boolean);
-		// Find which tab segment appears in the path
-		// Look for segments that match tab keys (claims, plans, tests, reports, settings)
 		for (const tabKey of Object.keys(tabs)) {
 			if (pathSegments.includes(tabKey)) {
 				return tabKey;
@@ -46,9 +43,11 @@ export function TabNavigation({
 		}
 	};
 
+    const gridColsClass = `grid w-full grid-cols-${Object.keys(tabs).length}`;
+
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-			<TabsList className="grid w-full grid-cols-3">
+			<TabsList className="grid w-full grid-cols-4">
 				{Object.entries(tabs).map(([tabKey, tabConfig]) => {
 					return (
 						<TabsTrigger

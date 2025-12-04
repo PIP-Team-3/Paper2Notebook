@@ -7,6 +7,19 @@ export async function getPaper(id: string): Promise<PaperSchema> {
 	return mockPaper(paperSchema.parse(papersRes));
 }
 
+export async function createStoryboard(paperId: string): Promise<{
+	storyboard_id: string;
+	signed_url: string;
+	expires_at: string;
+}> {
+	// Calls POST /api/v1/explain/kid
+	return postAPI('/explain/kid', { paper_id: paperId }) as Promise<{
+		storyboard_id: string;
+		signed_url: string;
+		expires_at: string;
+	}>;
+}
+
 export async function generateTests(planId: string): Promise<unknown> {
 	const response = await fetchAPI(`/plans/${planId}/materialize`);
 	return response;

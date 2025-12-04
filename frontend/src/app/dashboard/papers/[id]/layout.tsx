@@ -13,6 +13,7 @@ interface LayoutProps {
 const TABS = {
 	claims: { name: 'Claims', href: 'claims' },
 	plans: { name: 'Plans', href: 'plans' },
+	modules: { name: 'Modules', href: 'modules' },
 	settings: { name: 'Settings', href: 'settings' },
 };
 
