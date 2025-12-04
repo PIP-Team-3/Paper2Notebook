@@ -1,5 +1,5 @@
 'use client';
-import { BookOpen, Menu, SlashIcon } from 'lucide-react';
+import { BookOpen, SlashIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,72 +10,63 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '../../../components/ui/breadcrumb';
-import { Button } from '../../../components/ui/button';
-import { useIsMobile } from '../../../hooks/use-mobile';
 import { useBreadcrumb } from './breadcrumb-context';
-import { getDashboardItemByPath } from './dashboard-items';
-import { useDashboardMobileSidebar } from './mobile-sidebar';
 
 export function Header() {
-	const url = usePathname();
-	const currentItem = getDashboardItemByPath(url);
+	const pathname = usePathname();
 	const { slug } = useBreadcrumb();
-	const isMobile = useIsMobile();
-	const { setOpen } = useDashboardMobileSidebar();
+
+	// Parse path for breadcrumbs
+	const segments = pathname.split('/').filter(Boolean);
+	const isPaperRoute = segments.length >= 3 && segments[1] === 'papers';
+    const currentTab = isPaperRoute && segments[3] ? segments[3] : null;
+    const tabName = currentTab ? currentTab.charAt(0).toUpperCase() + currentTab.slice(1) : '';
 
 	return (
-		<header className="sticky top-0 z-40 flex h-12 w-full flex-shrink-0 items-center justify-between gap-4 border-b bg-background px-2">
+		<header className="sticky top-0 z-40 flex h-14 w-full items-center border-b bg-background px-6">
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
 						<BreadcrumbLink asChild>
 							<Link
 								href="/dashboard"
-								className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-300/50 backdrop-blur-sm"
+								className="flex items-center gap-2 font-semibold"
 							>
-								<BookOpen className="size-4 text-blue-700" />
+								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+									<BookOpen className="size-4" />
+								</div>
+                                <span>Library</span>
 							</Link>
 						</BreadcrumbLink>
 					</BreadcrumbItem>
 
-					<BreadcrumbSeparator>
-						<SlashIcon />
-					</BreadcrumbSeparator>
-
-					{currentItem?.hasSubmenu && slug ? (
+					{isPaperRoute && slug && (
 						<>
-							<BreadcrumbItem>
-								<BreadcrumbLink asChild>
-									<Link href={`/dashboard/${currentItem.url}`}>
-										{currentItem.title}
-									</Link>
-								</BreadcrumbLink>
-							</BreadcrumbItem>
 							<BreadcrumbSeparator>
 								<SlashIcon />
 							</BreadcrumbSeparator>
 							<BreadcrumbItem>
-								<BreadcrumbPage>{slug}</BreadcrumbPage>
+                                <BreadcrumbLink asChild>
+                                    <Link href={`/dashboard/papers/${segments[2]}`}>
+									    {slug}
+                                    </Link>
+								</BreadcrumbLink>
 							</BreadcrumbItem>
 						</>
-					) : (
-						<BreadcrumbItem>
-							<BreadcrumbPage>{currentItem?.title}</BreadcrumbPage>
-						</BreadcrumbItem>
 					)}
+
+                    {isPaperRoute && tabName && (
+                        <>
+                            <BreadcrumbSeparator>
+								<SlashIcon />
+							</BreadcrumbSeparator>
+                            <BreadcrumbItem>
+								<BreadcrumbPage>{tabName}</BreadcrumbPage>
+							</BreadcrumbItem>
+                        </>
+                    )}
 				</BreadcrumbList>
 			</Breadcrumb>
-
-			{isMobile && (
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => setOpen(true)}
-					className="md:hidden"
-				>
-					<Menu className="h-5 w-5" />
-				</Button>
-			)}
 		</header>
 	);
 }

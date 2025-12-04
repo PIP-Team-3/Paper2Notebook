@@ -1,4 +1,4 @@
-import { Book, ChartPie, Home, type LucideIcon } from 'lucide-react';
+import { Book, type LucideIcon } from 'lucide-react';
 
 interface DashboardLink {
 	title: string;
@@ -9,31 +9,20 @@ interface DashboardLink {
 
 export const dashboardItems: DashboardLink[] = [
 	{
-		title: 'Home',
+		title: 'Library',
 		url: '',
-		icon: Home,
-		hasSubmenu: false,
-	},
-
-	{
-		title: 'Papers',
-		url: 'papers',
 		icon: Book,
-		hasSubmenu: true,
-	},
-
-	{
-		title: 'Status',
-		url: 'status',
-		icon: ChartPie,
 		hasSubmenu: false,
 	},
 ];
 
 export const getDashboardItemByPath = (pathname: string) => {
-	return dashboardItems.find(
-		(item) =>
-			(item.url !== '' && pathname.startsWith(`/dashboard/${item.url}`)) ||
-			(item.url === '' && pathname === '/dashboard'),
-	);
+	// Simple match for the root dashboard path
+    if (pathname === '/dashboard') {
+        return dashboardItems[0];
+    }
+    // Check if we are in a sub-route (e.g. /dashboard/papers/...)
+    // Since we only have one main item now, we can default to it or return undefined
+    // Returning undefined allows the Header to handle breadcrumbs via slug/segments manually
+    return undefined;
 };
