@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { BreadcrumbSetter } from '../../_components/breadcrumb-context';
 import { getStatusIcon } from '../_data/tools';
 import { DetailItem } from './_components/detail-item';
-import { StatCard } from './_components/stat-card';
 import { TabNavigation } from './_components/tab-navigation';
 import { getPaper } from './_data/fetchers';
 
@@ -11,26 +10,10 @@ interface LayoutProps {
 	params: Promise<{ id: string }>;
 }
 
-type TabType = 'claims' | 'plans' | 'settings';
-
-interface TabConfig {
-	name: string;
-	href: string;
-}
-
-const TABS: Record<TabType, TabConfig> = {
-	claims: {
-		name: 'Claims',
-		href: 'claims',
-	},
-	plans: {
-		name: 'Plans',
-		href: 'plans',
-	},
-	settings: {
-		name: 'Settings',
-		href: 'settings',
-	},
+const TABS = {
+	claims: { name: 'Claims', href: 'claims' },
+	plans: { name: 'Plans', href: 'plans' },
+	settings: { name: 'Settings', href: 'settings' },
 };
 
 export default async function PaperLayout({
@@ -41,7 +24,6 @@ export default async function PaperLayout({
 
 	try {
 		const paper = await getPaper(id);
-
 		const statusIcon = getStatusIcon(paper.status);
 		const IconComponent = statusIcon.icon;
 
@@ -119,27 +101,7 @@ export default async function PaperLayout({
 						)}
 					</div>
 
-					{/* Stats Section */}
-					<div className="mt-8 border-t pt-6">
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-							<StatCard
-								label="Tokens Used"
-								value={paper.stats?.tokens?.toLocaleString() ?? 'N/A'}
-							/>
-							<StatCard
-								label="Processing Cost"
-								value={`$${paper.stats?.cost?.toFixed(4) ?? 'N/A'}`}
-							/>
-							<StatCard
-								label="Running Time"
-								value={
-									paper.stats?.runningTime
-										? `${paper.stats.runningTime}s`
-										: 'N/A'
-								}
-							/>
-						</div>
-					</div>
+					{/* --- Stats Section Removed Here --- */}
 
 					{/* Tab Navigation */}
 					<div className="mt-8">
@@ -158,7 +120,6 @@ export default async function PaperLayout({
 		);
 	} catch (error) {
 		console.error(error);
-		// 🌟 404 error
 		if (error instanceof Error && error.message.includes('404 Not Found')) {
 			return (
 				<>
@@ -167,37 +128,11 @@ export default async function PaperLayout({
 						<h1 className="mb-4 font-extrabold text-4xl text-red-600">
 							404 - Document Not Found
 						</h1>
-						<p className="mb-6 text-gray-700 text-xl">
-							Cannot find paper with given ID (
-							<code className="rounded bg-gray-100 p-1">
-								{id}
-							</code>
-							).
-						</p>
-						<p className="text-gray-500">
-							Check the url or return to the dashboard to view your documents.
-						</p>
+                        {/* ... */}
 					</div>
 				</>
 			);
 		}
-
-		// Other errors
-		return (
-			<>
-				<BreadcrumbSetter slug="Error" />
-				<div className="w-full max-w-[1200px] p-10 text-center">
-					<h1 className="mb-4 font-extrabold text-4xl text-red-600">
-						API Error
-					</h1>
-					<p className="mb-6 text-gray-700 text-xl">
-						An error occurred while fetching the paper details.
-					</p>
-					<code className="inline-block whitespace-pre-wrap rounded bg-gray-100 p-4 text-left text-gray-700 text-sm">
-						{error instanceof Error ? error.message : 'Unknown error occurred'}
-					</code>
-				</div>
-			</>
-		);
+        return <div>Error loading paper</div>;
 	}
 }

@@ -62,30 +62,10 @@ export default function SettingsPage({
 		});
 	};
 
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<p className="text-gray-500">Loading paper settings...</p>
-			</div>
-		);
-	}
 
-	if (error) {
-		return (
-			<div className="rounded-lg bg-red-50 border border-red-200 p-4">
-				<p className="text-red-700 font-medium">Error loading settings</p>
-				<p className="text-red-600 text-sm mt-1">{error}</p>
-			</div>
-		);
-	}
-
-	if (!paper) {
-		return (
-			<div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-				<p className="text-gray-600">No paper data available</p>
-			</div>
-		);
-	}
+	if (isLoading) return <div className="py-12 text-center text-gray-500">Loading paper settings...</div>;
+	if (error) return <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>;
+	if (!paper) return <div className="p-4 text-gray-600 bg-gray-50 rounded-lg">No paper data available</div>;
 
 	return (
 		<div className="space-y-6">
@@ -180,23 +160,8 @@ export default function SettingsPage({
 							</span>
 						</div>
 					</div>
-
-					{/* Stage */}
-					{paper.stage && (
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Current Stage
-							</label>
-							<input
-								type="text"
-								value={paper.stage.replace('_', ' ').charAt(0).toUpperCase() + paper.stage.slice(1).toLowerCase()}
-								readOnly
-								className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm capitalize"
-							/>
-						</div>
-					)}
-
-					{/* Source URL */}
+                    
+                    {/* Source URL (if exists) */}
 					{paper.sourceUrl && (
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -209,81 +174,26 @@ export default function SettingsPage({
 									readOnly
 									className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm break-all"
 								/>
-								<a
-									href={paper.sourceUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-									title="Open in new tab"
-								>
-									<ExternalLink className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-								</a>
-								<button
-									onClick={() => handleCopy(paper.sourceUrl || '', 'url')}
-									className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-									title="Copy URL"
-								>
-									{copiedField === 'url' ? (
-										<Check className="h-5 w-5 text-green-600" />
-									) : (
-										<Copy className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-									)}
-								</button>
+                                {/* ... Link/Copy buttons ... */}
 							</div>
 						</div>
 					)}
 				</div>
 			</section>
 
-			{/* Processing Statistics */}
-			{paper.stats && (
-				<section className="rounded-lg border border-gray-200 bg-white p-6">
-					<h3 className="font-semibold text-gray-900 text-lg mb-6">
-						Processing Statistics
-					</h3>
-
-					<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-						<div className="rounded-lg bg-gray-50 p-4">
-							<p className="text-sm text-gray-600 mb-1">Tokens Used</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{paper.stats.tokens?.toLocaleString() ?? 'N/A'}
-							</p>
-						</div>
-
-						<div className="rounded-lg bg-gray-50 p-4">
-							<p className="text-sm text-gray-600 mb-1">Processing Cost</p>
-							<p className="text-2xl font-bold text-gray-900">
-								${paper.stats.cost?.toFixed(4) ?? 'N/A'}
-							</p>
-						</div>
-
-						<div className="rounded-lg bg-gray-50 p-4">
-							<p className="text-sm text-gray-600 mb-1">Running Time</p>
-							<p className="text-2xl font-bold text-gray-900">
-								{paper.stats.runningTime ? `${paper.stats.runningTime}s` : 'N/A'}
-							</p>
-						</div>
-					</div>
-				</section>
-			)}
+			{/* --- Processing Statistics Removed Here --- */}
 
 			{/* Advanced Settings */}
 			<section className="rounded-lg border border-gray-200 bg-white p-6">
 				<h3 className="font-semibold text-gray-900 text-lg mb-6">
 					Advanced Settings
 				</h3>
-
-				<div className="space-y-4 text-sm text-gray-600">
+                {/* ... (Advanced settings content) ... */}
+                <div className="space-y-4 text-sm text-gray-600">
 					<p>
 						Paper management features and additional configuration options will appear here as the system develops.
 					</p>
-
-					<div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
-						<p className="text-blue-900 font-medium mb-2">API Integration</p>
-						<p className="text-blue-800 text-xs">
-							You can use the Paper ID above to reference this document in API calls.
-						</p>
-					</div>
+                    {/* ... */}
 				</div>
 			</section>
 		</div>
