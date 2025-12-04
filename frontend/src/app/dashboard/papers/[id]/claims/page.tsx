@@ -1,80 +1,66 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Zap } from 'lucide-react';
+import { AlertCircle, Zap, Terminal, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { extractClaimsStream, generatePlan } from '../_data/fetchers';
 import { ClaimsTable } from './_components/claims-table';
-import { LogsDisplay } from './_components/logs-display';
 import type { LogEntry } from '../_components/step-types';
 
-interface ClaimsPageProps {
-	params: Promise<{
-		id: string;
-	}>;
-}
-
-export default function ClaimsPage({
-	params,
-}: ClaimsPageProps) {
+export default function ClaimsPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = use(params);
 	const paperId = id;
 	const router = useRouter();
 
 	const [isExtracting, setIsExtracting] = useState(false);
-	const [extractError, setExtractError] = useState<string | null>(null);
+	const [showLogDialog, setShowLogDialog] = useState(false);
 	const [logs, setLogs] = useState<LogEntry[]>([]);
-	const [showLogs, setShowLogs] = useState(false);
+	const [extractError, setExtractError] = useState<string | null>(null);
 	const [claimsExtracted, setClaimsExtracted] = useState(false);
 	const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
 	const [isCreatingPlan, setIsCreatingPlan] = useState(false);
-	const [planError, setPlanError] = useState<string | null>(null);
 	const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-	const handleExtractClick = async () => {
-		try {
-			setIsExtracting(true);
-			setExtractError(null);
-			setLogs([]);
-			setShowLogs(true);
-			setClaimsExtracted(false);
+	const logsEndRef = useRef<HTMLDivElement>(null);
 
+	// 로그 자동 스크롤
+	useEffect(() => {
+		if (showLogDialog) {
+			logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+		}
+	}, [logs, showLogDialog]);
+
+	const handleExtractClick = async () => {
+		setIsExtracting(true);
+		setExtractError(null);
+		setLogs([]);
+		setShowLogDialog(true);
+		setClaimsExtracted(false);
+
+		try {
 			await extractClaimsStream(paperId, (log: LogEntry) => {
 				setLogs((prev) => [...prev, log]);
-				console.log(`[${log.type}] ${log.message}`);
 			});
-
 			setClaimsExtracted(true);
-
-			// Trigger claims table to refetch without full page refresh
 			setRefreshTrigger((prev) => prev + 1);
 		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : 'Failed to extract claims';
+			const errorMessage = err instanceof Error ? err.message : 'Failed to extract claims';
 			setExtractError(errorMessage);
+			// 에러 발생 시 다이얼로그 닫지 않고 에러 상태 표시
 		} finally {
 			setIsExtracting(false);
 		}
 	};
 
 	const handleCreatePlan = async () => {
+		setIsCreatingPlan(true);
 		try {
-			setIsCreatingPlan(true);
-			setPlanError(null);
-
-			// Convert selectedClaims Set to array
-			const claimIdsArray = Array.from(selectedClaims);
-
-			// Call the generatePlan API with selected claim IDs
-			await generatePlan(paperId, claimIdsArray);
-
-			// Navigate to the plans tab
+			await generatePlan(paperId, Array.from(selectedClaims));
 			router.push(`/dashboard/papers/${paperId}/plans`);
 		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : 'Failed to create plan';
-			setPlanError(errorMessage);
+			alert('Plan creation failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
 		} finally {
 			setIsCreatingPlan(false);
 		}
@@ -82,95 +68,115 @@ export default function ClaimsPage({
 
 	return (
 		<div className="space-y-6">
-			{/* Extract Claims Button */}
-			<div className="flex gap-3">
-				<Button
-					onClick={handleExtractClick}
-					disabled={isExtracting}
-				>
-					<Zap className="mr-2 h-4 w-4" />
-					{isExtracting ? 'Extracting Claims...' : 'Extract Claims'}
-				</Button>
-
-				{claimsExtracted && (
-					<div className="flex items-center rounded-lg bg-green-50 px-4 py-3 border border-green-200">
-						<p className="text-green-800 font-medium text-sm">
-							✓ Claims extracted successfully
-						</p>
-					</div>
-				)}
-			</div>
-
-			{/* Error Message */}
-			{extractError && (
-				<div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 p-4">
-					<AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-					<div>
-						<p className="font-semibold text-red-900 text-sm">
-							Extraction Error
-						</p>
-						<p className="text-red-700 text-sm mt-1">{extractError}</p>
-					</div>
-				</div>
-			)}
-
-			{/* Logs Display */}
-			{showLogs && logs.length > 0 && (
-				<div className="rounded-lg border border-gray-200 bg-white">
-					<div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
-						<div className="flex items-center justify-between">
-							<p className="font-semibold text-gray-700 text-sm">
-								Extraction Logs
-							</p>
-							<button
-								onClick={() => setShowLogs(!showLogs)}
-								className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-							>
-								{showLogs ? 'Hide' : 'Show'}
-							</button>
-						</div>
-					</div>
-					{showLogs && (
-						<LogsDisplay
-							logs={logs}
-							onClose={() => setShowLogs(false)}
-						/>
+			{/* 상단 버튼 영역 */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Button onClick={handleExtractClick} disabled={isExtracting}>
+						<Zap className="mr-2 h-4 w-4" />
+						{isExtracting ? 'Extracting...' : 'Extract Claims'}
+					</Button>
+					
+					{claimsExtracted && (
+						 <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
+							<CheckCircle2 className="h-4 w-4" />
+							<span>Extraction Complete</span>
+						 </div>
 					)}
 				</div>
+				
+				<Button 
+					onClick={handleCreatePlan} 
+					disabled={selectedClaims.size === 0 || isCreatingPlan}
+					variant={selectedClaims.size > 0 ? "default" : "secondary"}
+				>
+					{isCreatingPlan ? (
+						<>
+							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							Creating Plan...
+						</>
+					) : (
+						`Create Plan (${selectedClaims.size})`
+					)}
+				</Button>
+			</div>
+
+			{/* 에러 메시지 표시 */}
+			{extractError && (
+				<div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+					<AlertCircle className="h-5 w-5 shrink-0" />
+					<p>{extractError}</p>
+				</div>
 			)}
 
-			{/* Claims Table */}
-			<ClaimsTable
-				paperId={paperId}
-				show={true}
-				onClose={() => {}}
-				onSelectionsChange={setSelectedClaims}
+			{/* Claims 테이블 */}
+			<ClaimsTable 
+				paperId={paperId} 
+				show={true} 
+				onClose={() => {}} 
+				onSelectionsChange={setSelectedClaims} 
 				refreshTrigger={refreshTrigger}
 			/>
 
-			{/* Create Plan Button */}
-			<div className="flex gap-3">
-				<Button
-					onClick={handleCreatePlan}
-					disabled={selectedClaims.size === 0 || isCreatingPlan}
-				>
-					<Zap className="mr-2 h-4 w-4" />
-					{isCreatingPlan ? 'Creating Plan...' : `Create Plan (${selectedClaims.size})`}
-				</Button>
-			</div>
+			{/* 로그 다이얼로그 */}
+			<Dialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+				<DialogContent className="flex max-h-[80vh] max-w-2xl flex-col sm:max-h-[700px]">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Terminal className="h-5 w-5 text-gray-500" />
+							Extraction In Progress
+						</DialogTitle>
+						<DialogDescription>
+							AI Agents are reading the paper and identifying claims...
+						</DialogDescription>
+					</DialogHeader>
+					
+					{/* 프로그레스 바 (가짜 진행률이지만 시각적 피드백 제공) */}
+					{isExtracting && (
+						<div className="w-full space-y-1">
+							<div className="flex justify-between text-xs text-gray-500">
+								<span>Processing</span>
+								<span>{logs.length} events</span>
+							</div>
+							<div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+								<div className="h-full animate-progress-indeterminate bg-blue-500" style={{ width: '100%', transformOrigin: '0% 50%' }}></div>
+							</div>
+						</div>
+					)}
 
-			{/* Plan Creation Error */}
-			{planError && (
-				<div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 p-4">
-					<AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-					<div>
-						<p className="font-semibold text-red-900 text-sm">
-							Plan Creation Error
-						</p>
-						<p className="text-red-700 text-sm mt-1">{planError}</p>
+					{/* 로그 출력 영역 */}
+					<div className="flex-1 overflow-y-auto rounded-md border border-gray-800 bg-gray-950 p-4 font-mono text-xs text-gray-300 shadow-inner">
+						<div className="space-y-1">
+							{logs.length === 0 && isExtracting && (
+								<div className="animate-pulse text-gray-500">Initializing extraction agents...</div>
+							)}
+							{logs.map((log, i) => (
+								<div key={i} className="break-all border-l-2 border-gray-800 pl-2 hover:border-gray-700">
+									<span className="mr-2 text-gray-600">[{log.timestamp}]</span>
+									<span className={
+										log.type === 'error' ? 'text-red-400 font-bold' : 
+										log.type === 'progress' ? 'text-blue-400' : 
+										log.type === 'complete' ? 'text-green-400 font-bold' : 
+										'text-gray-300'
+									}>
+										{log.message}
+									</span>
+								</div>
+							))}
+							<div ref={logsEndRef} />
+						</div>
 					</div>
-				</div>
-			)}
+
+					<DialogFooter>
+						<Button 
+							variant="secondary" 
+							onClick={() => setShowLogDialog(false)}
+							disabled={isExtracting} // 추출 중에는 실수로 닫지 않도록 비활성화 (선택 사항)
+						>
+							{isExtracting ? 'Extracting...' : 'Close'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
