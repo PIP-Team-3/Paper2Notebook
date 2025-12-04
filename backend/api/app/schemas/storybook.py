@@ -27,6 +27,8 @@ class StoryPage(BaseModel):
     alt_text: str = Field(..., min_length=10, max_length=500, description="Alt-text for visual description")
     visual_hint: Optional[str] = Field(None, max_length=200, description="Suggested visual (not generated)")
 
+    image_url: Optional[str] = Field(None, description="URL of the generated illustration")
+    
     @field_validator("alt_text")
     @classmethod
     def alt_text_required(cls, v: str) -> str:
