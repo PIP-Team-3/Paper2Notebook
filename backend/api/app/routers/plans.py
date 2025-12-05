@@ -335,6 +335,7 @@ async def create_plan(
                 setter("p2n.error.code", error_code)
 
     final_response: Any | None = None
+    stage1_reasoning: str | None = None  # Capture verbose o3-mini output for two-stage planner
 
     try:
         with traced_run("p2n.planner.run") as traced_span:
@@ -501,6 +502,9 @@ The plan should use {first_dataset} with a simple baseline model suitable for CP
 
         if use_two_stage:
             # o3-mini with two-stage: Skip JSON parsing, send raw output to Stage 2
+            # CAPTURE Stage 1 reasoning BEFORE Stage 2 transforms it
+            stage1_reasoning = output_text
+
             logger.info(
                 "planner.stage1.complete model=%s output_length=%d two_stage=true",
                 planner_model,
@@ -826,6 +830,7 @@ The plan should use {first_dataset} with a simple baseline model suitable for CP
         created_by=settings.p2n_dev_user_id if is_valid_uuid(settings.p2n_dev_user_id) else None,
         created_at=now,
         updated_at=now,
+        stage1_reasoning=stage1_reasoning,  # Two-stage planner: verbose o3-mini output
     )
     db.insert_plan(plan_payload)
 

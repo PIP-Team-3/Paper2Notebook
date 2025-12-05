@@ -87,6 +87,8 @@ class PlanCreate(BaseModel):
     created_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    # Two-stage planner: verbose reasoning from Stage 1 (o3-mini)
+    stage1_reasoning: Optional[str] = None
 
     model_config = {
         "extra": "ignore",

@@ -64,3 +64,6 @@ DEEP_ANALYSIS_*.md
 venv/
 
 backend/data/cache
+
+# Local development documentation
+DEV_ROUTE_GUIDE.md

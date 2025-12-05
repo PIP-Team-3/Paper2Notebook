@@ -779,6 +779,8 @@ Budget: ~30 seconds (sklearn baseline), ~5 minutes (real TextCNN)
 
 **Note**: This may not be valid Plan v1.1 JSON. That's okay! Stage 2 fixes it.
 
+**Stage 1 Reasoning Persistence**: The raw Stage 1 output is captured and stored in `plans.stage1_reasoning` before Stage 2 runs. This preserves the full reasoning chain for debugging and user display.
+
 #### Stage 2: Schema Conformance (GPT-4o)
 
 **Model**: `gpt-4o` (default, configurable via `OPENAI_SCHEMA_FIXER_MODEL`)

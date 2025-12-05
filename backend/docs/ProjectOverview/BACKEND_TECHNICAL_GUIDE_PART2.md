@@ -1226,9 +1226,12 @@ CREATE TABLE plans (
     status TEXT DEFAULT 'planned',
     created_by UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    stage1_reasoning TEXT  -- Verbose o3-mini output from Stage 1 (two-stage planner)
 );
 ```
+
+**Note**: `stage1_reasoning` stores the raw verbose output from o3-mini (Stage 1) before it's transformed by GPT-4o (Stage 2). This preserves the model's reasoning for debugging and display to users. NULL for single-stage plans (gpt-4o only).
 
 #### `runs`
 ```sql

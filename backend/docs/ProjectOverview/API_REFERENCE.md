@@ -308,6 +308,8 @@ Content-Type: application/json
 2. **Stage 2 (GPT-4o)**: Convert Stage 1 output to valid Plan v1.1 schema
 3. **Sanitizer**: Post-processing for type coercion, dataset resolution, pruning
 
+**Stage 1 Reasoning Storage**: The verbose o3-mini output from Stage 1 is stored in the `plans.stage1_reasoning` column. This preserves the model's detailed reasoning before Stage 2 transforms it to structured JSON. Retrieve via `GET /api/v1/plans/{plan_id}` - the `stage1_reasoning` field will be included in the plan record. NULL for single-stage plans (gpt-4o only).
+
 **Errors**:
 - `404 E_PLAN_NOT_READY`: Paper not ready (no vector_store_id)
 - `502 E_PLAN_RUN_FAILED`: Planner agent failed
