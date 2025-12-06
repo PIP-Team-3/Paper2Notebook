@@ -110,7 +110,7 @@ export function PlanDisplay({ plan, show, onClose }: PlanDisplayProps) {
 						<SectionHeader title="Explanation" section="explanation" />
 						{expandedSections.explanation && (
 							<SectionContent>
-								{plan.explain.map((explanation, idx) => (
+								{plan.explain.map((explanation: string, idx: number) => (
 									<p key={idx} className="text-gray-700 text-sm">
 										{explanation}
 									</p>
@@ -202,7 +202,7 @@ export function PlanDisplay({ plan, show, onClose }: PlanDisplayProps) {
 						<SectionHeader title="Metrics" section="metrics" />
 						{expandedSections.metrics && (
 							<SectionContent>
-								{plan.metrics.map((metric, idx) => (
+								{plan.metrics.map((metric: { name: string; goal: string; split: string; direction: string; tolerance: number }, idx: number) => (
 									<div
 										key={idx}
 										className="rounded border border-gray-300 bg-white p-3 text-sm"
@@ -241,7 +241,7 @@ export function PlanDisplay({ plan, show, onClose }: PlanDisplayProps) {
 						{expandedSections.visualizations && (
 							<SectionContent>
 								<ul className="space-y-1 list-inside list-disc">
-									{plan.visualizations.map((viz, idx) => (
+									{plan.visualizations.map((viz: string, idx: number) => (
 										<li key={idx} className="text-gray-600">
 											{viz}
 										</li>

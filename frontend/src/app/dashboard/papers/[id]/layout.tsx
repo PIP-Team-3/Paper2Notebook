@@ -28,7 +28,7 @@ export default async function PaperLayout({
 		const statusIcon = getStatusIcon(paper.status);
 		const IconComponent = statusIcon.icon;
 
-		const formatDate = (dateString: string) => {
+		const formatDate = (dateString: string | null) => {
 			if (!dateString) return 'N/A';
 			return new Date(dateString).toLocaleDateString('en-US', {
 				year: 'numeric',
@@ -72,11 +72,13 @@ export default async function PaperLayout({
 						</DetailItem>
 
 						{/* Date Added */}
-						<DetailItem title="Date Added">
-							<time dateTime={paper.createdAt} className="text-gray-700">
-								{formatDate(paper.createdAt)}
-							</time>
-						</DetailItem>
+						{paper.createdAt && (
+							<DetailItem title="Date Added">
+								<time dateTime={paper.createdAt} className="text-gray-700">
+									{formatDate(paper.createdAt)}
+								</time>
+							</DetailItem>
+						)}
 
 						{/* Paper ID */}
 						<DetailItem title="Paper ID">

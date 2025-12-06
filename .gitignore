@@ -12,6 +12,7 @@ __pycache__/
 *.egg-info/
 .venv/
 .env
+.env.local
 
 # Node
 node_modules/
@@ -67,3 +68,9 @@ backend/data/cache
 
 # Local development documentation
 DEV_ROUTE_GUIDE.md
+
+# Environment files in RTF format (contain secrets)
+*.rtf
+
+# Deployment log (contains internal notes)
+DEPLOYMENT_LOG.md

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.env
+*.egg-info/
+.pytest_cache/
+assets/
+notebooks_mvp/
+docs/
+p2n_seed_setup/
+sql/
+*.md
+Makefile
