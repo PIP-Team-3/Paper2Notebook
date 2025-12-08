@@ -2,14 +2,31 @@
 
 import { useState, use, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Zap, Terminal, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+	AlertCircle,
+	Zap,
+	Terminal,
+	CheckCircle2,
+	Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+} from '@/components/ui/dialog';
 import { extractClaimsStream, generatePlan } from '../_data/fetchers';
 import { ClaimsTable } from './_components/claims-table';
 import type { LogEntry } from '../_components/step-types';
 
-export default function ClaimsPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ClaimsPage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
 	const { id } = use(params);
 	const paperId = id;
 	const router = useRouter();
@@ -30,7 +47,7 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 		if (showLogDialog) {
 			logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 		}
-	}, [logs, showLogDialog]);
+	}, [showLogDialog]);
 
 	const handleExtractClick = async () => {
 		setIsExtracting(true);
@@ -46,7 +63,8 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 			setClaimsExtracted(true);
 			setRefreshTrigger((prev) => prev + 1);
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : 'Failed to extract claims';
+			const errorMessage =
+				err instanceof Error ? err.message : 'Failed to extract claims';
 			setExtractError(errorMessage);
 			// 에러 발생 시 다이얼로그 닫지 않고 에러 상태 표시
 		} finally {
@@ -60,7 +78,9 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 			await generatePlan(paperId, Array.from(selectedClaims));
 			router.push(`/dashboard/papers/${paperId}/plans`);
 		} catch (err) {
-			alert('Plan creation failed: ' + (err instanceof Error ? err.message : 'Unknown error'));
+			alert(
+				`Plan creation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+			);
 		} finally {
 			setIsCreatingPlan(false);
 		}
@@ -75,19 +95,19 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 						<Zap className="mr-2 h-4 w-4" />
 						{isExtracting ? 'Extracting...' : 'Extract Claims'}
 					</Button>
-					
+
 					{claimsExtracted && (
-						 <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
+						<div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 font-medium text-green-700 text-sm">
 							<CheckCircle2 className="h-4 w-4" />
 							<span>Extraction Complete</span>
-						 </div>
+						</div>
 					)}
 				</div>
-				
-				<Button 
-					onClick={handleCreatePlan} 
+
+				<Button
+					onClick={handleCreatePlan}
 					disabled={selectedClaims.size === 0 || isCreatingPlan}
-					variant={selectedClaims.size > 0 ? "default" : "secondary"}
+					variant={selectedClaims.size > 0 ? 'default' : 'secondary'}
 				>
 					{isCreatingPlan ? (
 						<>
@@ -109,11 +129,11 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 			)}
 
 			{/* Claims 테이블 */}
-			<ClaimsTable 
-				paperId={paperId} 
-				show={true} 
-				onClose={() => {}} 
-				onSelectionsChange={setSelectedClaims} 
+			<ClaimsTable
+				paperId={paperId}
+				show={true}
+				onClose={() => {}}
+				onSelectionsChange={setSelectedClaims}
 				refreshTrigger={refreshTrigger}
 			/>
 
@@ -129,35 +149,48 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 							AI Agents are reading the paper and identifying claims...
 						</DialogDescription>
 					</DialogHeader>
-					
+
 					{/* 프로그레스 바 (가짜 진행률이지만 시각적 피드백 제공) */}
 					{isExtracting && (
 						<div className="w-full space-y-1">
-							<div className="flex justify-between text-xs text-gray-500">
+							<div className="flex justify-between text-gray-500 text-xs">
 								<span>Processing</span>
 								<span>{logs.length} events</span>
 							</div>
 							<div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-								<div className="h-full animate-progress-indeterminate bg-blue-500" style={{ width: '100%', transformOrigin: '0% 50%' }}></div>
+								<div
+									className="h-full animate-progress-indeterminate bg-blue-500"
+									style={{ width: '100%', transformOrigin: '0% 50%' }}
+								></div>
 							</div>
 						</div>
 					)}
 
 					{/* 로그 출력 영역 */}
-					<div className="flex-1 overflow-y-auto rounded-md border border-gray-800 bg-gray-950 p-4 font-mono text-xs text-gray-300 shadow-inner">
+					<div className="flex-1 overflow-y-auto rounded-md border border-gray-800 bg-gray-950 p-4 font-mono text-gray-300 text-xs shadow-inner">
 						<div className="space-y-1">
 							{logs.length === 0 && isExtracting && (
-								<div className="animate-pulse text-gray-500">Initializing extraction agents...</div>
+								<div className="animate-pulse text-gray-500">
+									Initializing extraction agents...
+								</div>
 							)}
 							{logs.map((log, i) => (
-								<div key={i} className="break-all border-l-2 border-gray-800 pl-2 hover:border-gray-700">
+								<div
+									key={i}
+									className="break-all border-gray-800 border-l-2 pl-2 hover:border-gray-700"
+								>
 									<span className="mr-2 text-gray-600">[{log.timestamp}]</span>
-									<span className={
-										log.type === 'error' ? 'text-red-400 font-bold' : 
-										log.type === 'progress' ? 'text-blue-400' : 
-										log.type === 'complete' ? 'text-green-400 font-bold' : 
-										'text-gray-300'
-									}>
+									<span
+										className={
+											log.type === 'error'
+												? 'font-bold text-red-400'
+												: log.type === 'progress'
+													? 'text-blue-400'
+													: log.type === 'complete'
+														? 'font-bold text-green-400'
+														: 'text-gray-300'
+										}
+									>
 										{log.message}
 									</span>
 								</div>
@@ -167,8 +200,8 @@ export default function ClaimsPage({ params }: { params: Promise<{ id: string }>
 					</div>
 
 					<DialogFooter>
-						<Button 
-							variant="secondary" 
+						<Button
+							variant="secondary"
 							onClick={() => setShowLogDialog(false)}
 							disabled={isExtracting} // 추출 중에는 실수로 닫지 않도록 비활성화 (선택 사항)
 						>

@@ -17,10 +17,7 @@ interface TabNavigationProps {
 	tabs: Record<string, TabConfig>;
 }
 
-export function TabNavigation({
-	paperId,
-	tabs,
-}: TabNavigationProps) {
+export function TabNavigation({ paperId, tabs }: TabNavigationProps) {
 	const pathname = usePathname();
 	const router = useRouter();
 
@@ -43,7 +40,7 @@ export function TabNavigation({
 		}
 	};
 
-    const gridColsClass = `grid w-full grid-cols-${Object.keys(tabs).length}`;
+	const _gridColsClass = `grid w-full grid-cols-${Object.keys(tabs).length}`;
 
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">

@@ -25,7 +25,13 @@ interface ClaimsTableProps {
 	refreshTrigger?: number;
 }
 
-export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refreshTrigger }: ClaimsTableProps) {
+export function ClaimsTable({
+	paperId,
+	show,
+	onClose,
+	onSelectionsChange,
+	refreshTrigger,
+}: ClaimsTableProps) {
 	const [claims, setClaims] = useState<Claim[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -59,7 +65,7 @@ export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refres
 		};
 
 		fetchClaims();
-	}, [paperId, show, refreshTrigger]);
+	}, [paperId, show]);
 
 	useEffect(() => {
 		onSelectionsChange?.(selectedClaims);
@@ -91,7 +97,7 @@ export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refres
 
 	return (
 		<div className="mt-4 rounded-lg border border-gray-200 bg-gray-50">
-			<div className="border-b border-gray-200 bg-gray-100 px-4 py-3">
+			<div className="border-gray-200 border-b bg-gray-100 px-4 py-3">
 				<div>
 					<p className="font-semibold text-gray-700 text-sm">
 						Extracted Claims
@@ -129,10 +135,13 @@ export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refres
 					<div className="overflow-x-auto">
 						<table className="w-full border-collapse">
 							<thead>
-								<tr className="border-b border-gray-200 bg-gray-50">
-									<th className="px-3 py-2 text-center font-semibold text-gray-700 text-xs w-12">
+								<tr className="border-gray-200 border-b bg-gray-50">
+									<th className="w-12 px-3 py-2 text-center font-semibold text-gray-700 text-xs">
 										<Checkbox
-											checked={selectedClaims.size === claims.length && claims.length > 0}
+											checked={
+												selectedClaims.size === claims.length &&
+												claims.length > 0
+											}
 											onCheckedChange={handleSelectAll}
 										/>
 									</th>
@@ -160,7 +169,7 @@ export function ClaimsTable({ paperId, show, onClose, onSelectionsChange, refres
 								{claims.map((claim) => (
 									<tr
 										key={claim.id}
-										className="border-b border-gray-100 hover:bg-gray-50"
+										className="border-gray-100 border-b hover:bg-gray-50"
 									>
 										<td className="px-3 py-2 text-center">
 											<Checkbox

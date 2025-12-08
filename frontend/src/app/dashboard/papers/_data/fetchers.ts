@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { fetchAPI, uploadFileAPI } from '../../../../lib/api';
-import { type PaperSchema, paperSchema, paperStages } from './schemas';
+import { type PaperSchema, paperSchema } from './schemas';
 
 export async function getAllPapers(): Promise<PaperSchema[]> {
 	const papersRes = await fetchAPI('/papers');
@@ -45,6 +45,6 @@ export async function uploadPaper(
 
 	const res = await uploadFileAPI('/papers/', formData);
 
-	const paperRes = await getPaper(res['paper_id']);
+	const paperRes = await getPaper(res.paper_id);
 	return paperRes;
 }

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { BreadcrumbSetter } from '../../_components/breadcrumb-context';
 import { getStatusIcon } from '../_data/tools';
 import { DetailItem } from './_components/detail-item';
@@ -17,10 +17,7 @@ const TABS = {
 	settings: { name: 'Settings', href: 'settings' },
 };
 
-export default async function PaperLayout({
-	children,
-	params,
-}: LayoutProps) {
+export default async function PaperLayout({ children, params }: LayoutProps) {
 	const { id } = await params;
 
 	try {
@@ -108,16 +105,11 @@ export default async function PaperLayout({
 
 					{/* Tab Navigation */}
 					<div className="mt-8">
-						<TabNavigation
-							paperId={paper.id}
-							tabs={TABS}
-						/>
+						<TabNavigation paperId={paper.id} tabs={TABS} />
 					</div>
 
 					{/* Tab Content */}
-					<div className="mt-6">
-						{children}
-					</div>
+					<div className="mt-6">{children}</div>
 				</div>
 			</>
 		);
@@ -131,11 +123,11 @@ export default async function PaperLayout({
 						<h1 className="mb-4 font-extrabold text-4xl text-red-600">
 							404 - Document Not Found
 						</h1>
-                        {/* ... */}
+						{/* ... */}
 					</div>
 				</>
 			);
 		}
-        return <div>Error loading paper</div>;
+		return <div>Error loading paper</div>;
 	}
 }

@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, use } from 'react';
-import { BookOpen, Loader2, ExternalLink, ArrowRight, AlertCircle } from 'lucide-react';
+import {
+	BookOpen,
+	Loader2,
+	ExternalLink,
+	ArrowRight,
+	AlertCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createStoryboard } from '../_data/fetchers';
 
@@ -32,9 +38,12 @@ export default function ModulesPage({
 		<div className="space-y-6">
 			{/* Header */}
 			<div>
-				<h2 className="text-lg font-semibold text-gray-900">Analysis Modules</h2>
-				<p className="text-sm text-gray-500">
-					Apply AI agents to generate simplified explanations and auxiliary content.
+				<h2 className="font-semibold text-gray-900 text-lg">
+					Analysis Modules
+				</h2>
+				<p className="text-gray-500 text-sm">
+					Apply AI agents to generate simplified explanations and auxiliary
+					content.
 				</p>
 			</div>
 
@@ -47,22 +56,22 @@ export default function ModulesPage({
 								<BookOpen className="h-6 w-6" />
 							</div>
 							{result && (
-								<span className="rounded-full bg-green-100 px-2 py-1 text-xs font-bold uppercase text-green-700">
+								<span className="rounded-full bg-green-100 px-2 py-1 font-bold text-green-700 text-xs uppercase">
 									Generated
 								</span>
 							)}
 						</div>
 
-						<h3 className="mb-2 text-base font-bold text-gray-900">
+						<h3 className="mb-2 font-bold text-base text-gray-900">
 							Kid-Mode Storybook
 						</h3>
-						<p className="mb-6 text-sm text-gray-500">
+						<p className="mb-6 text-gray-500 text-sm">
 							Generates a Grade-3 reading level visual explanation of the paper
 							using AI agents. Creates 5-7 pages with alt-text descriptions.
 						</p>
 
 						{error && (
-							<div className="mb-4 flex items-start gap-2 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+							<div className="mb-4 flex items-start gap-2 rounded-md border border-red-100 bg-red-50 p-3 text-red-600 text-sm">
 								<AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
 								<p>{error}</p>
 							</div>
@@ -76,7 +85,7 @@ export default function ModulesPage({
 									href={result.signed_url}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+									className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 font-medium text-sm text-white transition-colors hover:bg-indigo-700"
 								>
 									<ExternalLink className="h-4 w-4" />
 									Open Storyboard JSON
@@ -115,9 +124,9 @@ export default function ModulesPage({
 				</div>
 
 				{/* Coming Soon Placeholder */}
-				<div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center opacity-60">
+				<div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 border-dashed bg-gray-50/50 p-6 text-center opacity-60">
 					<div className="mb-2 font-medium text-gray-400">More Coming Soon</div>
-					<p className="text-xs text-gray-400">
+					<p className="text-gray-400 text-xs">
 						Comparison Analysis, Podcast Generator
 					</p>
 				</div>

@@ -73,7 +73,12 @@ function PaperTile({ paper }: { paper: PaperSchema }) {
 				</CardHeader>
 				<CardContent>
 					<p>URL: {paper.sourceUrl || 'N/A'}</p>
-					<p>Created At: {paper.createdAt ? new Date(paper.createdAt).toLocaleDateString() : 'N/A'}</p>
+					<p>
+						Created At:{' '}
+						{paper.createdAt
+							? new Date(paper.createdAt).toLocaleDateString()
+							: 'N/A'}
+					</p>
 				</CardContent>
 			</Card>
 		</Link>

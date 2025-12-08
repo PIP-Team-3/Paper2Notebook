@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Copy, Check, ExternalLink } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { getPaper } from '../_data/fetchers';
 import type { PaperSchema } from '../../_data/schemas';
 
@@ -11,9 +11,7 @@ interface SettingsPageProps {
 	}>;
 }
 
-export default function SettingsPage({
-	params,
-}: SettingsPageProps) {
+export default function SettingsPage({ params }: SettingsPageProps) {
 	const { id } = use(params);
 	const paperId = id;
 	const [paper, setPaper] = useState<PaperSchema | null>(null);
@@ -62,23 +60,33 @@ export default function SettingsPage({
 		});
 	};
 
-
-	if (isLoading) return <div className="py-12 text-center text-gray-500">Loading paper settings...</div>;
-	if (error) return <div className="p-4 text-red-600 bg-red-50 rounded-lg">{error}</div>;
-	if (!paper) return <div className="p-4 text-gray-600 bg-gray-50 rounded-lg">No paper data available</div>;
+	if (isLoading)
+		return (
+			<div className="py-12 text-center text-gray-500">
+				Loading paper settings...
+			</div>
+		);
+	if (error)
+		return <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}</div>;
+	if (!paper)
+		return (
+			<div className="rounded-lg bg-gray-50 p-4 text-gray-600">
+				No paper data available
+			</div>
+		);
 
 	return (
 		<div className="space-y-6">
 			{/* Paper Information Section */}
 			<section className="rounded-lg border border-gray-200 bg-white p-6">
-				<h3 className="font-semibold text-gray-900 text-lg mb-6">
+				<h3 className="mb-6 font-semibold text-gray-900 text-lg">
 					Paper Information
 				</h3>
 
 				<div className="space-y-6">
 					{/* Paper Title */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="mb-2 block font-medium text-gray-700 text-sm">
 							Title
 						</label>
 						<div className="flex items-center gap-2">
@@ -90,7 +98,7 @@ export default function SettingsPage({
 							/>
 							<button
 								onClick={() => handleCopy(paper.title, 'title')}
-								className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
 								title="Copy title"
 							>
 								{copiedField === 'title' ? (
@@ -104,7 +112,7 @@ export default function SettingsPage({
 
 					{/* Paper ID */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="mb-2 block font-medium text-gray-700 text-sm">
 							Paper ID
 						</label>
 						<div className="flex items-center gap-2">
@@ -112,11 +120,11 @@ export default function SettingsPage({
 								type="text"
 								value={paper.id}
 								readOnly
-								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm font-mono"
+								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-gray-900 text-sm"
 							/>
 							<button
 								onClick={() => handleCopy(paper.id, 'id')}
-								className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
 								title="Copy ID"
 							>
 								{copiedField === 'id' ? (
@@ -130,7 +138,7 @@ export default function SettingsPage({
 
 					{/* Created Date */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="mb-2 block font-medium text-gray-700 text-sm">
 							Created Date
 						</label>
 						<input
@@ -143,12 +151,12 @@ export default function SettingsPage({
 
 					{/* Status */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label className="mb-2 block font-medium text-gray-700 text-sm">
 							Processing Status
 						</label>
 						<div className="flex items-center gap-2">
 							<span
-								className={`inline-flex rounded-full px-3 py-1 text-sm font-medium capitalize ${
+								className={`inline-flex rounded-full px-3 py-1 font-medium text-sm capitalize ${
 									paper.status === 'processing'
 										? 'bg-blue-100 text-blue-800'
 										: paper.status === 'completed'
@@ -160,11 +168,11 @@ export default function SettingsPage({
 							</span>
 						</div>
 					</div>
-                    
-                    {/* Source URL (if exists) */}
+
+					{/* Source URL (if exists) */}
 					{paper.sourceUrl && (
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label className="mb-2 block font-medium text-gray-700 text-sm">
 								Source URL
 							</label>
 							<div className="flex items-center gap-2">
@@ -172,9 +180,9 @@ export default function SettingsPage({
 									type="text"
 									value={paper.sourceUrl}
 									readOnly
-									className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm break-all"
+									className="flex-1 break-all rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm"
 								/>
-                                {/* ... Link/Copy buttons ... */}
+								{/* ... Link/Copy buttons ... */}
 							</div>
 						</div>
 					)}
@@ -185,15 +193,16 @@ export default function SettingsPage({
 
 			{/* Advanced Settings */}
 			<section className="rounded-lg border border-gray-200 bg-white p-6">
-				<h3 className="font-semibold text-gray-900 text-lg mb-6">
+				<h3 className="mb-6 font-semibold text-gray-900 text-lg">
 					Advanced Settings
 				</h3>
-                {/* ... (Advanced settings content) ... */}
-                <div className="space-y-4 text-sm text-gray-600">
+				{/* ... (Advanced settings content) ... */}
+				<div className="space-y-4 text-gray-600 text-sm">
 					<p>
-						Paper management features and additional configuration options will appear here as the system develops.
+						Paper management features and additional configuration options will
+						appear here as the system develops.
 					</p>
-                    {/* ... */}
+					{/* ... */}
 				</div>
 			</section>
 		</div>

@@ -65,7 +65,7 @@ export function GeneratedAssets({
 			const cd = res.headers.get('content-disposition');
 			if (cd) {
 				const match = /filename\*?=(?:UTF-8'')?["']?([^;"']+)/i.exec(cd);
-				if (match && match[1]) {
+				if (match?.[1]) {
 					try {
 						finalName = decodeURIComponent(match[1]);
 					} catch {
@@ -98,7 +98,7 @@ export function GeneratedAssets({
 
 	return (
 		<div className="mt-4 rounded-lg border border-gray-200 bg-gray-50">
-			<div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-2">
+			<div className="flex items-center justify-between border-gray-200 border-b bg-gray-100 px-4 py-2">
 				<div>
 					<p className="font-semibold text-gray-700 text-sm">Generated Files</p>
 					<p className="text-gray-500 text-xs">

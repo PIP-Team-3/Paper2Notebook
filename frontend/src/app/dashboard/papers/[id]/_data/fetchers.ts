@@ -30,7 +30,10 @@ export async function getAllPlans(paperId: string): Promise<unknown> {
 	return response;
 }
 
-export async function getPlanById(paperId: string, planId: string): Promise<unknown> {
+export async function getPlanById(
+	paperId: string,
+	planId: string,
+): Promise<unknown> {
 	const response = await fetchAPI(`/papers/${paperId}/plans/${planId}`);
 	return response;
 }
@@ -60,7 +63,7 @@ export async function extractClaimsStream(
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 	const url = `${baseUrl}/papers/${paperId}/extract`;
 
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve, _reject) => {
 		const eventSource = new EventSource(url);
 
 		let logId = 0;
@@ -91,7 +94,7 @@ export async function extractClaimsStream(
 					count: data.count,
 					agent: data.agent,
 				});
-			} catch (e) {
+			} catch (_e) {
 				// If not JSON, treat as plain text log
 				onLog({
 					id: String(logId++),

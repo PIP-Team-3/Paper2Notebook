@@ -12,7 +12,7 @@ export default async function DashboardPage() {
 	return (
 		<div className="w-full max-w-[1200px] p-8">
 			<BreadcrumbSetter slug="" />
-            
+
 			<PapersHeader />
 
 			<PapersGrid papers={papers} />

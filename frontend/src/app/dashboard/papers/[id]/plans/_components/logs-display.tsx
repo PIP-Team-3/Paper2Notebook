@@ -14,7 +14,7 @@ export function LogsDisplay({ title, logs, onClose }: LogsDisplayProps) {
 
 	return (
 		<div className="mt-4 rounded-lg border border-gray-200 bg-gray-50">
-			<div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-4 py-2">
+			<div className="flex items-center justify-between border-gray-200 border-b bg-gray-100 px-4 py-2">
 				<p className="font-semibold text-gray-700 text-sm">{title}</p>
 				<button
 					onClick={onClose}

@@ -19,8 +19,10 @@ export function Header() {
 	// Parse path for breadcrumbs
 	const segments = pathname.split('/').filter(Boolean);
 	const isPaperRoute = segments.length >= 3 && segments[1] === 'papers';
-    const currentTab = isPaperRoute && segments[3] ? segments[3] : null;
-    const tabName = currentTab ? currentTab.charAt(0).toUpperCase() + currentTab.slice(1) : '';
+	const currentTab = isPaperRoute && segments[3] ? segments[3] : null;
+	const tabName = currentTab
+		? currentTab.charAt(0).toUpperCase() + currentTab.slice(1)
+		: '';
 
 	return (
 		<header className="sticky top-0 z-40 flex h-14 w-full items-center border-b bg-background px-6">
@@ -35,7 +37,7 @@ export function Header() {
 								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
 									<BookOpen className="size-4" />
 								</div>
-                                <span>Library</span>
+								<span>Library</span>
 							</Link>
 						</BreadcrumbLink>
 					</BreadcrumbItem>
@@ -46,25 +48,23 @@ export function Header() {
 								<SlashIcon />
 							</BreadcrumbSeparator>
 							<BreadcrumbItem>
-                                <BreadcrumbLink asChild>
-                                    <Link href={`/dashboard/papers/${segments[2]}`}>
-									    {slug}
-                                    </Link>
+								<BreadcrumbLink asChild>
+									<Link href={`/dashboard/papers/${segments[2]}`}>{slug}</Link>
 								</BreadcrumbLink>
 							</BreadcrumbItem>
 						</>
 					)}
 
-                    {isPaperRoute && tabName && (
-                        <>
-                            <BreadcrumbSeparator>
+					{isPaperRoute && tabName && (
+						<>
+							<BreadcrumbSeparator>
 								<SlashIcon />
 							</BreadcrumbSeparator>
-                            <BreadcrumbItem>
+							<BreadcrumbItem>
 								<BreadcrumbPage>{tabName}</BreadcrumbPage>
 							</BreadcrumbItem>
-                        </>
-                    )}
+						</>
+					)}
 				</BreadcrumbList>
 			</Breadcrumb>
 		</header>

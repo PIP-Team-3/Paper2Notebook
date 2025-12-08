@@ -19,9 +19,7 @@ interface Plan {
 	budget_minutes?: number;
 }
 
-export default function PlansPage({
-	params,
-}: PlansPageProps) {
+export default function PlansPage({ params }: PlansPageProps) {
 	const { id } = use(params);
 	const paperId = id;
 	const router = useRouter();
@@ -73,7 +71,7 @@ export default function PlansPage({
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				<div className="text-center py-12">
+				<div className="py-12 text-center">
 					<p className="text-gray-500">Loading plans...</p>
 				</div>
 			</div>
@@ -84,23 +82,23 @@ export default function PlansPage({
 		<div className="space-y-6">
 			{/* Error Message */}
 			{error && (
-				<div className="flex items-start gap-3 rounded-lg bg-red-50 border border-red-200 p-4">
-					<AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+				<div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+					<AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
 					<div>
 						<p className="font-semibold text-red-900 text-sm">
 							Error Loading Plans
 						</p>
-						<p className="text-red-700 text-sm mt-1">{error}</p>
+						<p className="mt-1 text-red-700 text-sm">{error}</p>
 					</div>
 				</div>
 			)}
 
 			{/* Plans Table */}
 			{plans.length > 0 ? (
-				<div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-					<div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+					<div className="border-gray-200 border-b bg-gray-50 px-6 py-4">
 						<h3 className="font-semibold text-gray-900">Reproduction Plans</h3>
-						<p className="text-gray-600 text-sm mt-1">
+						<p className="mt-1 text-gray-600 text-sm">
 							{plans.length} plan{plans.length !== 1 ? 's' : ''} found
 						</p>
 					</div>
@@ -109,15 +107,15 @@ export default function PlansPage({
 							<button
 								key={plan.id}
 								onClick={() => handlePlanClick(plan.id)}
-								className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors text-left"
+								className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"
 							>
-								<div className="flex-1 min-w-0">
+								<div className="min-w-0 flex-1">
 									<div className="flex items-center gap-4">
 										<div className="flex-1">
 											<h4 className="font-medium text-gray-900">
 												Plan Version {plan.version ?? 'N/A'}
 											</h4>
-											<p className="text-gray-600 text-sm mt-1">
+											<p className="mt-1 text-gray-600 text-sm">
 												Created {formatDate(plan.created_at)}
 											</p>
 										</div>
@@ -141,7 +139,7 @@ export default function PlansPage({
 										</div>
 									</div>
 								</div>
-								<ChevronRight className="h-5 w-5 text-gray-400 ml-4 flex-shrink-0" />
+								<ChevronRight className="ml-4 h-5 w-5 flex-shrink-0 text-gray-400" />
 							</button>
 						))}
 					</div>

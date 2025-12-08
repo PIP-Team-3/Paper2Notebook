@@ -71,7 +71,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 			const selectedFile = files[0];
 			const validExtensions = ['.xlsx', '.xls', '.csv'];
 			const fileName = selectedFile.name.toLowerCase();
-			const isValidType = validExtensions.some(ext => fileName.endsWith(ext));
+			const isValidType = validExtensions.some((ext) => fileName.endsWith(ext));
 			if (isValidType) {
 				setDatasetFile(selectedFile);
 			} else {
@@ -88,7 +88,11 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		setIsUploading(true);
 
 		try {
-			await uploadPaper(file || undefined, url || undefined, datasetFile || undefined);
+			await uploadPaper(
+				file || undefined,
+				url || undefined,
+				datasetFile || undefined,
+			);
 
 			// Success - close dialog and refresh papers list
 			onOpenChange(false);
@@ -181,7 +185,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 									Dataset (Optional)
 								</label>
 								<label htmlFor="dataset-input" className="block">
-									<div className="w-full cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-6 text-center transition hover:border-gray-400">
+									<div className="w-full cursor-pointer rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition hover:border-gray-400">
 										<input
 											type="file"
 											accept=".xlsx,.xls,.csv"
@@ -190,7 +194,9 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 											id="dataset-input"
 										/>
 										<p className="text-sm">
-											{datasetFile ? datasetFile.name : 'Click to select a dataset'}
+											{datasetFile
+												? datasetFile.name
+												: 'Click to select a dataset'}
 										</p>
 										<p className="mt-1 text-gray-500 text-xs">
 											.xlsx, .xls, or .csv
@@ -201,7 +207,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 									<button
 										type="button"
 										onClick={() => setDatasetFile(null)}
-										className="mt-2 text-sm text-red-600 hover:text-red-800"
+										className="mt-2 text-red-600 text-sm hover:text-red-800"
 									>
 										Remove dataset
 									</button>
