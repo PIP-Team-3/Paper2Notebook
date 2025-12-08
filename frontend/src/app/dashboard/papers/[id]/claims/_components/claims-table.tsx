@@ -4,39 +4,34 @@ import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '../../../../../../components/ui/checkbox';
 import { fetchAPI } from '../../../../../../lib/api';
-
-interface Claim {
-	id: string;
-	dataset_name: string;
-	split: string;
-	metric_name: string;
-	metric_value: number;
-	units: string;
-	source_citation: string;
-	confidence: number;
-	created_at: string;
-}
+import type { Claim } from '../_types/claim';
 
 interface ClaimsTableProps {
 	paperId: string;
 	show: boolean;
 	onSelectionsChange?: (selectedClaims: Set<string>) => void;
-	refreshTrigger?: number;
+	initialClaims?: Claim[];
 }
 
 export function ClaimsTable({
 	paperId,
 	show,
 	onSelectionsChange,
-	refreshTrigger,
+	initialClaims = [],
 }: ClaimsTableProps) {
-	const [claims, setClaims] = useState<Claim[]>([]);
+	const [claims, setClaims] = useState<Claim[]>(initialClaims);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
 
+	// Update claims when initialClaims changes (e.g., after extraction)
 	useEffect(() => {
-		if (!show) return;
+		setClaims(initialClaims);
+	}, [initialClaims]);
+
+	// Only fetch if we don't have initial claims
+	useEffect(() => {
+		if (!show || initialClaims.length > 0) return;
 
 		const fetchClaims = async () => {
 			try {
@@ -63,7 +58,7 @@ export function ClaimsTable({
 		};
 
 		fetchClaims();
-	}, [paperId, show]);
+	}, [paperId, show, initialClaims.length]);
 
 	useEffect(() => {
 		onSelectionsChange?.(selectedClaims);

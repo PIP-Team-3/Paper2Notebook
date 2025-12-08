@@ -6,6 +6,18 @@ export async function getPaper(id: string): Promise<PaperSchema> {
 	return paperSchema.parse(papersRes);
 }
 
+export async function getClaims(paperId: string): Promise<unknown[]> {
+	const response = await fetchAPI(`/papers/${paperId}/claims`);
+	// The API returns an array of claims directly
+	if (Array.isArray(response)) {
+		return response;
+	} else if (response.claims) {
+		// Fallback if the response has a claims property
+		return response.claims;
+	}
+	return [];
+}
+
 export async function createStoryboard(paperId: string): Promise<{
 	storyboard_id: string;
 	signed_url: string;
