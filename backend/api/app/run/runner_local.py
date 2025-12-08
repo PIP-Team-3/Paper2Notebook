@@ -7,6 +7,7 @@ import os
 import random
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -149,6 +150,66 @@ def _flush_notebook_events(events_path: Path, emit: EmitCallable, start_index: i
     return len(raw_lines)
 
 
+def _run_subprocess_with_streaming(
+    cmd: List[str],
+    emit: EmitCallable,
+    timeout: int,
+    error_message_prefix: str,
+) -> None:
+    """
+    Run a subprocess and stream its output in real-time to keep SSE connection alive.
+
+    This function uses subprocess.Popen to stream stdout/stderr line-by-line,
+    emitting SSE events for each line. This prevents idle timeouts during long
+    operations like pip install.
+    """
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,  # Combine stderr into stdout
+        text=True,
+        bufsize=1,  # Line buffered
+    )
+
+    output_lines = []
+    start_time = time.time()
+
+    try:
+        # Read output line by line in real-time
+        for line in process.stdout:
+            # Check timeout
+            if time.time() - start_time > timeout:
+                process.kill()
+                raise subprocess.TimeoutExpired(cmd, timeout)
+
+            line = line.rstrip()
+            if line:
+                output_lines.append(line)
+                # Emit the line to keep connection alive
+                emit("log_line", {"message": line})
+
+        # Wait for process to complete
+        return_code = process.wait(timeout=max(1, timeout - int(time.time() - start_time)))
+
+        if return_code != 0:
+            error_output = "\n".join(output_lines[-20:])  # Last 20 lines
+            raise subprocess.CalledProcessError(
+                return_code, cmd, output=error_output
+            )
+
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+        raise
+    except Exception:
+        process.kill()
+        process.wait()
+        raise
+    finally:
+        if process.stdout:
+            process.stdout.close()
+
+
 def _execute_sync(
     notebook_bytes: bytes,
     requirements_bytes: bytes,
@@ -202,45 +263,55 @@ def _execute_sync(
             venv_python = venv_path / "bin" / "python"
 
         # Install requirements in the venv
-        emit("log_line", {"message": "Installing requirements..."})
+        emit("log_line", {"message": "Upgrading pip..."})
         try:
-            subprocess.run(
+            _run_subprocess_with_streaming(
                 [str(venv_python), "-m", "pip", "install", "--upgrade", "pip"],
-                check=True,
-                capture_output=True,
+                emit=emit,
                 timeout=300,
+                error_message_prefix="Failed to upgrade pip",
             )
             emit("log_line", {"message": "pip upgraded successfully"})
         except subprocess.CalledProcessError as e:
-            emit("log_line", {"message": f"Failed to upgrade pip: {e.stderr.decode()}"})
+            emit("log_line", {"message": f"Failed to upgrade pip: {e.output if hasattr(e, 'output') else str(e)}"})
             raise NotebookExecutionError(f"Failed to upgrade pip in venv: {e}")
+        except subprocess.TimeoutExpired as e:
+            emit("log_line", {"message": "pip upgrade timed out"})
+            raise NotebookExecutionError(f"pip upgrade timed out after {e.timeout}s")
 
         # Install requirements from requirements.txt
+        emit("log_line", {"message": "Installing requirements from requirements.txt..."})
         try:
-            subprocess.run(
+            _run_subprocess_with_streaming(
                 [str(venv_python), "-m", "pip", "install", "-r", str(requirements_path)],
-                check=True,
-                capture_output=True,
+                emit=emit,
                 timeout=600,
+                error_message_prefix="Failed to install requirements",
             )
             emit("log_line", {"message": "Requirements installed successfully"})
         except subprocess.CalledProcessError as e:
-            emit("log_line", {"message": f"Failed to install requirements: {e.stderr.decode()}"})
+            emit("log_line", {"message": f"Failed to install requirements: {e.output if hasattr(e, 'output') else str(e)}"})
             raise NotebookExecutionError(f"Failed to install requirements in venv: {e}")
+        except subprocess.TimeoutExpired as e:
+            emit("log_line", {"message": "Requirements installation timed out"})
+            raise NotebookExecutionError(f"Requirements installation timed out after {e.timeout}s")
 
         # Register IPython kernel with Jupyter
         emit("log_line", {"message": "Registering IPython kernel with Jupyter..."})
         try:
-            subprocess.run(
+            _run_subprocess_with_streaming(
                 [str(venv_python), "-m", "ipykernel", "install", "--user", "--name", "venv-kernel", "--display-name", "Python (venv)"],
-                check=True,
-                capture_output=True,
+                emit=emit,
                 timeout=120,
+                error_message_prefix="Failed to register IPython kernel",
             )
             emit("log_line", {"message": "IPython kernel registered successfully"})
         except subprocess.CalledProcessError as e:
-            emit("log_line", {"message": f"Failed to register IPython kernel: {e.stderr.decode()}"})
+            emit("log_line", {"message": f"Failed to register IPython kernel: {e.output if hasattr(e, 'output') else str(e)}"})
             raise NotebookExecutionError(f"Failed to register IPython kernel: {e}")
+        except subprocess.TimeoutExpired as e:
+            emit("log_line", {"message": "IPython kernel registration timed out"})
+            raise NotebookExecutionError(f"IPython kernel registration timed out after {e.timeout}s")
 
         # Read notebook and execute in the venv
         nb = nbformat.reads(notebook_bytes.decode("utf-8"), as_version=4)
