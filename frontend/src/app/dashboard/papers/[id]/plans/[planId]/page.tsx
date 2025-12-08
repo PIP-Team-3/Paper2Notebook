@@ -434,7 +434,13 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 			)}
 
 			{/* Plan Display */}
-			{plan && <PlanDisplay plan={plan.plan_json || plan} show={true} />}
+			{plan && (
+				<PlanDisplay
+					plan={plan.plan_json}
+					reasoning={plan.stage1_reasoning}
+					show={true}
+				/>
+			)}
 
 			{/* Generate Tests Section */}
 			<div className="space-y-4 border-t pt-6">
