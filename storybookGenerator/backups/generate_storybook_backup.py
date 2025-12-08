@@ -25,50 +25,22 @@ def init_client(api_key: str = None) -> OpenAI:
 # Build a world-style prefix from storybook["world"]
 # --------------------------------------------------------
 def build_world_prefix(world: dict) -> str:
-    """
-    Build a world-level style guide prompt from the storybook["world"] section.
-
-    Expected world format (from new extract_claims.py):
-
-    {
-      "setting": "1–3 sentences...",
-      "characters": [
-        {
-          "id": "side_a" | "side_b" | "guide",
-          "name": "in-world name (e.g., 'Team Star')",
-          "role": "link to scientific side / explanation",
-          "appearance": "paragraph describing species/type, body shape, colors, clothing, symbol, etc.",
-          "emotional_style": "1–2 sentences about typical emotions/behavior."
-        },
-        ...
-      ],
-      "style_rules": [
-        "soft watercolor...",
-        "No text labels...",
-        ...
-      ]
-    }
-    """
-
-    characters = world.get("characters", [])
+    team_star = world["teams"]["team_star"]
+    team_moon = world["teams"]["team_moon"]
+    referee = world["referee"]
     setting = world.get("setting", "")
+    allowed_objects = world.get("allowed_objects", [])
     style_rules = world.get("style_rules", [])
 
-    # Describe characters nicely
-    char_lines = []
-    for ch in characters:
-        cid = ch.get("id", "unknown")
-        name = ch.get("name", "Unnamed character")
-        role = ch.get("role", "character")
-        appearance_text = ch.get("appearance", "")
-        emotional = ch.get("emotional_style", "")
+    # Turn dicts into readable strings
+    def describe(name, obj):
+        appearance = obj.get("appearance", {})
+        appearance_str = ", ".join(
+            f"{k.replace('_', ' ')}: {v}" for k, v in appearance.items()
+        )
+        return f"{name}: {obj.get('type', '')} ({appearance_str})"
 
-        char_desc = f"{name} ({cid}) — {role}. Appearance: {appearance_text}"
-        if emotional:
-            char_desc += f" Emotional style: {emotional}"
-        char_lines.append(f"- {char_desc}")
-
-    # Style rules
+    allowed_str = ", ".join(allowed_objects) if allowed_objects else "none specified"
     style_rules_str = "\n- ".join(style_rules) if style_rules else ""
 
     prefix = f"""
@@ -76,24 +48,33 @@ You are illustrating a children's storybook set in a single, consistent world.
 
 WORLD STYLE GUIDE
 -----------------
-Main characters (they MUST look the SAME on every page):
-{chr(10).join(char_lines)}
+Characters (must look the SAME on every page):
+- {describe("Team Star", team_star)}
+- {describe("Team Moon", team_moon)}
+- Referee Owl: {referee.get('type', '')} ({", ".join(f"{k}: {v}" for k, v in referee.get("appearance", {}).items())})
 
 Setting:
 - {setting}
 
+Allowed objects:
+- {allowed_str}
+
 Visual style rules:
 - {style_rules_str}
 
-GLOBAL CONSISTENCY RULES (VERY IMPORTANT):
-- Always draw the SAME versions of each character on every page
-  (same species, body shape, colors, proportions, clothes/accessories, and overall look).
-- Use ONLY the characters defined above. Do NOT invent new characters or crowds.
-- Soft, bright, kid-friendly picture-book style.
+GLOBAL RULES (VERY IMPORTANT):
+- Always draw the SAME versions of Team Star, Team Moon, and Referee Owl on every page
+  (same species, colors, clothes, proportions, and overall look).
+- There is exactly ONE owl character in this world: Referee Owl.
+  Never draw more than one owl in a scene. Do NOT add extra owls,
+- Soft, bright, kid-friendly watercolor picture-book style.
 - Absolutely NO words, letters, labels, or text anywhere inside the image
-  (no captions, no signs with writing).
+  (no 'Team Star', no 'Team Moon', no captions, no signs).
+- Do NOT show any scoreboards, numbers, glowing score symbols, or floating score indicators on any page UNLESS that page's visual_prompt explicitly requests a scoreboard.
+
 """
     return prefix.strip() + "\n"
+
 
 # --------------------------------------------------------
 # Generate ONE image from GPT-Image-1
@@ -152,22 +133,15 @@ def generate_images_from_storybook(
     storybook_path: str = "storybook.json",
     output_dir: str = "storybook_images",
     size: str = "auto",
-    page_ids=None,
+    page_ids=None,          # <— NEW
 ):
     client = init_client()
 
-    # Load storybook JSON ONCE
+    # Load storybook JSON
     with open(storybook_path, "r") as f:
         data = json.load(f)
 
-    # Support both formats:
-    # 1) { "storybook": { "world": ..., "pages": ... } }
-    # 2) { "world": ..., "pages": ... }
-    if "storybook" in data:
-        story = data["storybook"]
-    else:
-        story = data  # assume world/pages are at top level
-
+    story = data["storybook"]
     world = story["world"]
     pages = story["pages"]
 
@@ -222,6 +196,7 @@ def generate_images_from_storybook(
         )
 
     return results
+
 
 
 # --------------------------------------------------------

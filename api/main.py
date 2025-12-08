@@ -633,6 +633,59 @@ async def get_claims(paper_id: str):
     # Return empty array if no claims found (not an error - claims may not be extracted yet)
     return claims if claims else []
 
+# ==============================
+# Kid-Mode Storybook Proxy
+# ==============================
+
+class KidExplainRequest(BaseModel):
+    paper_id: str
+
+
+@app.post("/explain/kid")
+async def create_kid_storybook(payload: KidExplainRequest):
+    """
+    Frontend calls: POST /explain/kid
+    This proxies to backend: POST /api/v1/explain/kid
+    """
+    import httpx
+
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000")
+    endpoint = f"{backend_url}/api/v1/explain/kid"
+
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        response = await client.post(endpoint, json=payload.model_dump())
+
+    if response.status_code not in (200, 201):
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"Backend kid explain failed: {response.text}",
+        )
+
+    return response.json()
+
+
+@app.post("/explain/kid/{storyboard_id}/refresh")
+async def refresh_kid_storyboard(storyboard_id: str):
+    """
+    Frontend calls: POST /explain/kid/{storyboard_id}/refresh
+    Backend endpoint: POST /api/v1/explain/kid/{storyboard_id}/refresh
+    """
+    import httpx
+
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000")
+    endpoint = f"{backend_url}/api/v1/explain/kid/{storyboard_id}/refresh"
+
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        response = await client.post(endpoint)
+
+    if response.status_code not in (200, 201):
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"Backend kid refresh failed: {response.text}",
+        )
+
+    return response.json()
+
 @app.post("/papers/{id}/start")
 def start():
     return f"kick off paper processing for paper: {id}"

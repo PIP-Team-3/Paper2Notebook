@@ -1,0 +1,114 @@
+{
+  "storybook": {
+    "world": {
+      "teams": {
+        "team_star": {
+          "type": "mascot creature",
+          "appearance": {
+            "shape": "round and soft",
+            "color": "gentle blue glow",
+            "features": "two stubby legs, simple eyes, small shining star badge"
+          }
+        },
+        "team_moon": {
+          "type": "mascot creature",
+          "appearance": {
+            "shape": "round and soft",
+            "color": "warm yellow glow",
+            "features": "two stubby legs, simple eyes, small crescent badge"
+          }
+        }
+      },
+      "referee": {
+        "type": "owl",
+        "appearance": {
+          "feathers": "soft grey",
+          "features": "big calm eyes, tiny striped whistle",
+          "accessory": "silver coin for tosses"
+        }
+      },
+      "setting": "a magical nighttime stadium with soft glowing grass and a single shimmering goal",
+      "allowed_objects": [
+        "glowing orbs",
+        "silver coin",
+        "goal frame",
+        "floating score lights"
+      ],
+      "style_rules": [
+        "Soft picture-book watercolor style",
+        "No character name labels inside images",
+        "No new characters introduced later in the story",
+        "Consistent character shapes and colors across all pages",
+	"No scoreboards or numbers unless explicitly stated",
+"Team Star must ALWAYS have a round, soft, almost circular body and head, NEVER a star-shaped outline. The only star is the small badge on the chest.",
+  "Team Moon must ALWAYS have a round, soft body and head, NEVER a crescent-shaped outline. The only moon is the small badge on the chest."
+      ]
+    },
+    "pages": [
+      {
+        "id": 1,
+        "stage": "introduction",
+        "title": "Welcome to the Magical Stadium",
+        "caption": "Team Star and Team Moon arrive at a glowing stadium. They are equally skilled and excited. Referee Owl explains that they will take turns kicking magical orbs toward the same shimmering goal.",
+        "visual_prompt": "At night in a magical stadium, the blue Star mascot and the yellow Moon mascot stand side by side on glowing grass, both smiling with the same size soft glow. Referee Owl hovers between them, holding a silver coin ready to flip. A single goal stands in the background. No piles of orbs yet behind either team, showing they are starting equal.",
+        "related_claim": "Equal skill and conditions; simple task with only two outcomes."
+      },
+      {
+        "id": 2,
+        "stage": "randomization",
+        "title": "The Coin of Chance",
+        "caption": "Referee Owl flips a silver coin to decide who kicks first. The coin sparkles as it spins in the air. Team Star wins and steps forward for the first orb.",
+        "visual_prompt": "Close view of Referee Owl flipping a silver coin that glows in midair. The blue Star mascot is clearly stepping forward toward a bright orb on the grass, outlined with a gentle halo to show it has been chosen to go first. The yellow Moon mascot stays a step behind, watching calmly with a neutral face. The goal glows faintly in the distance. No score piles yet.",
+        "related_claim": "Order of play assigned by true randomization."
+      },
+      {
+        "id": 3,
+        "stage": "first_mover",
+        "title": "The First Kick",
+        "caption": "Team Star gently taps a glowing orb. It arcs smoothly and slips into the shimmering goal. The air hums softly with confidence as Team Moon watches their turn approach.",
+        "visual_prompt": "Show exactly ONE glowing golden orb in the entire scene. The blue Star mascot has already kicked it, so there is NO orb on the grass and NO orb in the air. The single orb is now just inside the goal, resting against the net so it is clearly past the goal line. The net is gently pushed back where the orb touches it. A curved golden streak of light (a trail, NOT another orb) starts near the grass in front of Star’s foot and leads to the orb in the net, showing the path it traveled. Do not draw any second orb on the ground, and do not place any orb along the arc or in mid-air; only the one inside the goal. Farther back and slightly to the right stands the yellow Moon mascot, positioned behind Star, watching with a slightly tense but hopeful expression. The soccer goal is fully visible in the background, illuminated by the bright glow of the single orb in the net.",
+        "related_claim": "Going first creates early confidence and sets a reference point."
+      },
+      {
+        "id": 4,
+        "stage": "responding",
+        "title": "The Second Kick",
+        "caption": "Team Moon kicks next. Their orb glows warmly, but they feel a tiny flutter—because Team Star has already scored. The ball still reaches the net, but the pressure has begun.",
+        "visual_prompt": "The yellow Moon mascot has kicked a glowing orb toward the goal, but their face looks a little worried with a tiny sweat droplet and a slight wobble line by their foot. The orb is now inside the goal. The orb still travels in a bright path toward the net, showing a score. The referee owl watches over them in the sky.",
+        "related_claim": "Second kicker begins to feel psychological pressure."
+      },
+      {
+        "id": 5,
+        "stage": "escalation",
+        "title": "Round After Round",
+        "caption": "The teams continue taking turns. Team Star’s orbs stay bright and steady. Team Moon’s orbs begin to flicker in later rounds as the feeling of needing to 'catch up' grows stronger.",
+        "visual_prompt": "Show a simple glowing scoreboard floating in the background, showing that Team Star is ahead. Use soft glowing numbers such as '3 – 1'. Star's side should glow brighter. In the foreground, Star looks confident while Moon appears tense.",
+        "related_claim": "Second team’s performance declines more in later rounds."
+      },
+{
+        "id": 6,
+        "stage": "behind_state",
+        "title": "The Heavy Feeling of Falling Behind",
+        "caption": "Team Moon begins to feel the weight of pressure as Team Star scores again with ease. The gap grows, and Moon's glow dims with worry.",
+        "visual_prompt": "Place the blue Star mascot on the LEFT side of the field and the goal on the RIGHT side of the scene. The yellow Moon mascot stands just in front of the goal on the RIGHT, looking worried with a small sweat droplet. Show exactly ONE smooth glowing golden orb (no soccer-ball pattern) moving from LEFT to RIGHT. The orb should be very close to the goal on the RIGHT, about to enter or just touching the net, clearly traveling from Star toward the goal. A smooth golden trail extends BEHIND the orb, pointing back toward the LEFT where Star kicked it. The trail must start near Star’s foot and fade as it approaches the orb near the goal, so the motion direction is clearly from Star to the goal, not backwards. The blue Star mascot has the SAME round, soft body and head as in earlier pages (NOT star-shaped), with a small star badge on its chest. Do NOT draw any additional orbs on the ground. The referee owl may float above watching calmly, but do not add extra owls. No scoreboards or glowing score symbols in the sky.",
+        "related_claim": "Being behind increases emotional pressure and makes each following play harder."
+      },
+      {
+        "id": 7,
+        "stage": "final_rounds",
+        "title": "The Last Kicks",
+        "caption": "With the pressure now overwhelming, Team Moon's final kick flickers weakly and sails wide of the goal. Meanwhile, Team Star stays calm and steady.",
+        "visual_prompt": "Arrange the scene EXACTLY as follows and do NOT change the positions: (1) The yellow Moon mascot is on the FAR LEFT foreground, in a kicking pose with one leg lifted, wobble lines near the foot, and a worried expression with a sweat droplet. (2) The goal is on the FAR RIGHT side of the scene, empty in front of it. NOTHING and NO CHARACTER may stand in front of the goal. (3) The blue Star mascot stands in the CENTER of the scene, NOT blocking the goal, simply watching calmly. Show EXACTLY ONE glowing orb in the entire scene. This orb must be LOW on the RIGHT SIDE and OUTSIDE the goal frame, clearly missing the goal. It must be placed on the grass and must NOT be inside the goal area, NOT touching the net, NOT behind Star, and NOT duplicated. A shaky glowing trail must start at Moon's foot on the LEFT and travel horizontally across the ground toward the RIGHT, ending at the single orb that missed the goal. Do NOT draw any second orb anywhere. Do NOT draw Star in front of the goal. Do NOT place the ball near or inside the goal. The referee owl may stand calmly near the goal but must NOT block the goal.",
+        "related_claim": "Cumulative pressure leads to increased mistakes from the trailing team."
+      },
+      {
+        "id": 8,
+        "stage": "reflection",
+        "title": "Referee Owl’s Lesson",
+        "caption": "When the match ends, the score is clear: Team Star stays bright and composed, while Team Moon struggles under mounting pressure. Referee Owl explains how going second increases emotional strain.",
+        "visual_prompt": "Show a dramatic glowing scoreboard in the night sky with soft watercolor style, clearly displaying the final score '10 – 1'. Team Star’s number '10' glows brightly with a strong aura, while Team Moon’s '1' glows faintly. The blue Star mascot stands confidently under the scoreboard. The yellow Moon mascot stands nearby with a dimmer glow, looking tired but listening. Referee Owl floats gently between them, offering comfort and explanation. Only ONE owl should appear. Do not draw any additional orbs. The scoreboard is explicitly allowed on this page.",
+        "related_claim": "Final outcomes reveal how psychological pressure—not skill differences—shapes performance."
+      }
+    ]
+  }
+}

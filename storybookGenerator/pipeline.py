@@ -1,24 +1,84 @@
-from openai import OpenAI
-from dotenv import load_dotenv
+"""
+End-to-end pipeline for Kid-Mode Storybook.
+
+Steps:
+1) Download PDF from Supabase storage
+2) Extract scientific claims + build storybook.json with GPT
+3) Generate storybook images from storybook.json
+"""
+
+from __future__ import annotations
+
 import os
 import time
 import json
 import re
+from typing import Optional
 
-# -------------------------------
-# Setup
-# -------------------------------
+from dotenv import load_dotenv
+from supabase import create_client
+from openai import OpenAI
+
+import json
+from pathlib import Path
+
+# ---------------------------------------------------------------------
+# ENV + GLOBAL CLIENTS
+# ---------------------------------------------------------------------
+
 load_dotenv()
-client = OpenAI()
 
-PDF_PATH = "test_paper.pdf"   # change to your paper path
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env")
+
+if not OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY must be set in .env")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+text_client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-# -------------------------------
-# Helper: extract text/JSON from Responses API
-# -------------------------------
-def extract_text_from_response(resp):
+# ---------------------------------------------------------------------
+# 1) DOWNLOAD PDF FROM SUPABASE
+# ---------------------------------------------------------------------
+
+def download_pdf_from_supabase(
+    internal_path: str,
+    bucket: str = "papers",
+    output_file: str = "test_paper.pdf",
+) -> str:
     """
+    Download a single PDF from the Supabase storage bucket.
+
+    internal_path: the path INSIDE the bucket (what Supabase calls "path").
+                  e.g. "dev/2025/12/02/abc123.pdf"
+    bucket:       storage bucket name (default "papers")
+    output_file:  local filename to save to
+    """
+    print(f"\n[1/3] Downloading PDF from Supabase…")
+    print(f"  bucket={bucket}")
+    print(f"  internal_path={internal_path}")
+
+    file_bytes = supabase.storage.from_(bucket).download(internal_path)
+
+    with open(output_file, "wb") as f:
+        f.write(file_bytes)
+
+    print(f"  ✔ Saved to {output_file}")
+    return output_file
+
+
+# ---------------------------------------------------------------------
+# 2) EXTRACT CLAIMS + BUILD STORYBOOK.JSON (TEXT LLM PIPELINE)
+# ---------------------------------------------------------------------
+
+def extract_text_from_response(resp) -> str:
+    """
+    Helper copied from extract_claims.py:
     Tries to extract the main text/JSON content from a Responses API response.
     Returns a string (which should be JSON in our prompts).
     """
@@ -39,31 +99,37 @@ def extract_text_from_response(resp):
     return ""
 
 
-if __name__ == "__main__":
-    # -------------------------------
-    # 1. Create vector store + upload PDF
-    # -------------------------------
-    print("Creating vector store...")
-    vector_store = client.vector_stores.create(name="p2n_store")
+def build_storybook_json_from_pdf(
+    pdf_path: str,
+    storybook_path: str = "storybook.json",
+) -> str:
+    """
+    Reimplements your extract_claims.py main block as a function:
+    - creates a vector store
+    - uploads the PDF
+    - asks GPT for claims JSON
+    - asks GPT again for a kid-mode storybook JSON
+    - saves final JSON to storybook_path
+    """
+
+    print(f"\n[2/3] Creating vector store + extracting claims from {pdf_path}…")
+
+    # 2.1 Vector store + upload
+    vector_store = text_client.vector_stores.create(name="p2n_store")
     store_id = vector_store.id
-    print("Vector Store ID:", store_id)
+    print(f"  Vector Store ID: {store_id}")
 
-    print("Uploading PDF into vector store...")
-    with open(PDF_PATH, "rb") as f:
-        file_upload = client.vector_stores.files.upload(
+    with open(pdf_path, "rb") as f:
+        file_upload = text_client.vector_stores.files.upload(
             vector_store_id=store_id,
-            file=f
+            file=f,
         )
-    print("Uploaded File ID:", file_upload.id)
+    print(f"  Uploaded File ID: {file_upload.id}")
 
-    # Give indexing a moment
+    # give indexing a moment
     time.sleep(3)
 
-    # -------------------------------
-    # 2. Extract a simple structured summary of the paper
-    # -------------------------------
-    print("Extracting scientific summary with GPT-5...")
-
+    # 2.2 Claims JSON prompt (same as extract_claims.py)
     claims_prompt = """
 You are a scientific explainer that outputs ONLY JSON.
 
@@ -107,7 +173,7 @@ Rules:
 - Output ONLY this JSON object, no extra commentary.
 """
 
-    claims_response = client.responses.create(
+    claims_response = text_client.responses.create(
         model="gpt-5",
         input=[
             {
@@ -122,16 +188,10 @@ Rules:
     )
 
     raw_claims_text = extract_text_from_response(claims_response)
-
-    print("\n--- RAW CLAIMS JSON TEXT ---\n")
-    print(raw_claims_text)
-
     claims_data = json.loads(raw_claims_text)
 
-    # -------------------------------
-    # 3. Generate a SIMPLE, RESULT-ORIENTED storybook
-    # -------------------------------
-    print("\nGenerating Storybook with GPT-5 (minimal, result-oriented)...")
+    # 2.3 Storybook JSON prompt (same one you used before)
+    print("  Generating storybook JSON…")
 
     science_json = json.dumps(claims_data, indent=2)
 
@@ -255,13 +315,13 @@ and results (missed vs scored), but keep the visuals minimal.
 EXTRACTED_SCIENCE_INPUT:
 """ + "\n" + science_json
 
-    storybook_response = client.responses.create(
+    storybook_response = text_client.responses.create(
         model="gpt-5",
         input=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": storybook_prompt}
+                    {"type": "input_text", "text": storybook_prompt},
                 ],
             }
         ],
@@ -269,35 +329,125 @@ EXTRACTED_SCIENCE_INPUT:
 
     storybook_raw = extract_text_from_response(storybook_response)
 
-    print("\n\n--- STORYBOOK RAW OUTPUT ---\n")
-    print(storybook_raw)
-
-    # -------------------------------
-    # 4. Clean, validate, and save final storybook JSON
-    # -------------------------------
-    parsed = None
+    # 2.4 Clean / parse and save
+    parsed: Optional[dict] = None
     try:
         parsed = json.loads(storybook_raw)
-        print("\n--- STORYBOOK JSON (Parsed Successfully) ---\n")
-        print(json.dumps(parsed, indent=2))
     except json.JSONDecodeError:
-        print("\n[WARNING] GPT-5 output was not valid JSON on first try. Attempting auto-fix...")
-
-        # Try to extract the largest {...} block
+        # try to salvage largest {...} block, same trick as extract_claims.py
         json_match = re.search(r"\{(.|\n)*\}", storybook_raw)
         if json_match:
-            try:
-                parsed = json.loads(json_match.group(0))
-                print("\n--- STORYBOOK JSON (Auto-fixed) ---\n")
-                print(json.dumps(parsed, indent=2))
-            except Exception as e:
-                print("\n[ERROR] Auto-fixed JSON still invalid:", e)
-        else:
-            print("\n[ERROR] Could not find any JSON object in the output.")
+            parsed = json.loads(json_match.group(0))
 
-    if parsed:
-        with open("storybook.json", "w") as f:
-            json.dump(parsed, f, indent=2)
-        print("\nSaved 'storybook.json' successfully!")
-    else:
-        print("\nDid NOT save JSON due to errors.")
+    if not parsed:
+        raise ValueError("Could not parse storybook JSON from model output")
+
+    with open(storybook_path, "w") as f:
+        json.dump(parsed, f, indent=2)
+
+    print(f"  ✔ Saved storybook JSON to {storybook_path}")
+    return storybook_path
+
+
+# ---------------------------------------------------------------------
+# 3) GENERATE IMAGES FROM STORYBOOK.JSON
+# ---------------------------------------------------------------------
+
+def generate_storybook_images(
+    storybook_path: str = "storybook.json",
+    output_dir: str = "storybook_images",
+    size: str = "1536x1024",
+):
+    """
+    Thin wrapper around your existing generate_images_from_storybook().
+    """
+    # Lazy import so backend can start without Pillow when we don't generate images
+    from .generate_storybook import generate_images_from_storybook
+
+    print(f"\n[3/3] Generating storybook images from {storybook_path}…")
+    results = generate_images_from_storybook(
+        storybook_path=storybook_path,
+        output_dir=output_dir,
+        size=size,
+    )
+    print(f"  ✔ Generated {len(results)} images into '{output_dir}'")
+    return results
+
+
+# ---------------------------------------------------------------------
+# MASTER PIPELINE
+# ---------------------------------------------------------------------
+
+def run_pipeline(
+    internal_path: str,
+    bucket: str = "papers",
+    local_pdf: str = "test_paper.pdf",
+    storybook_json: str = "storybook.json",
+    image_dir: str = "storybook_images",
+):
+    """
+    Full end-to-end run:
+      Supabase -> PDF -> claims + storybook.json -> images
+    """
+    pdf_path = download_pdf_from_supabase(
+        internal_path=internal_path,
+        bucket=bucket,
+        output_file=local_pdf,
+    )
+
+    storybook_path = build_storybook_json_from_pdf(
+        pdf_path=pdf_path,
+        storybook_path=storybook_json,
+    )
+
+    generate_storybook_images(
+        storybook_path=storybook_path,
+        output_dir=image_dir,
+    )
+
+
+def run_pipeline_and_return_storybook(
+    internal_path: str,
+    bucket: str = "papers",
+    local_pdf: str = "test_paper.pdf",
+    storybook_json: str = "storybook.json",
+    image_dir: str = "storybook_images",
+    generate_images: bool = False,
+) -> dict:
+    """
+    High-level helper for the backend:
+
+    1) Download PDF from Supabase
+    2) Build storybook.json via LLM
+    3) (optionally) generate images
+    4) Return the parsed storybook JSON as a Python dict
+    """
+    pdf_path = download_pdf_from_supabase(
+        internal_path=internal_path,
+        bucket=bucket,
+        output_file=local_pdf,
+    )
+
+    storybook_path = build_storybook_json_from_pdf(
+        pdf_path=pdf_path,
+        storybook_path=storybook_json,
+    )
+
+    if generate_images:
+        generate_storybook_images(
+            storybook_path=storybook_path,
+            output_dir=image_dir,
+        )
+
+    with open(storybook_path, "r") as f:
+        data = json.load(f)
+
+    return data
+
+
+if __name__ == "__main__":
+    # Easiest: edit this string for now, or later parse from CLI args.
+    # This should be the path INSIDE the "papers" bucket.
+    INTERNAL_PATH = "dev/2025/12/02/4261ba15-c176-4c8d-a58e-a3e8fa451a30.pdf"
+
+    run_pipeline(internal_path=INTERNAL_PATH)
