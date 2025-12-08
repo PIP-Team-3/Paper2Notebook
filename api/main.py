@@ -82,7 +82,7 @@ async def upload_paper(
             form_data["dataset_file"] = (dataset_file.filename, dataset_contents, dataset_file.content_type)
 
         # Call the backend ingest endpoint
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(ingest_endpoint, files=form_data)
 
         if response.status_code not in [200, 201]:
@@ -92,16 +92,6 @@ async def upload_paper(
             )
 
         result = response.json()
-        paper_id = result.get("paper_id")
-
-        # Update the paper stage to "ingest" in the database
-        if paper_id:
-            try:
-                supabase.table("papers").update({"stage": "ingest"}).eq("id", paper_id).execute()
-            except Exception as e:
-                print(f"Warning: Failed to update paper stage: {e}")
-                # Don't fail the request if stage update fails
-
         return result
 
     # except HTTPException:
