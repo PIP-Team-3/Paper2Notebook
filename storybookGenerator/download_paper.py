@@ -13,7 +13,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 BUCKET = "papers"
 
 # Manually paste the internal path (everything AFTER "papers/")
-internal_path = "papers/dev/2025/11/11/86f29bc2-d51b-4f0d-ad90-08e9a898d899.pdf"
+internal_path = "papers/dev/2025/12/02/e08c4cc2-3dce-4a1b-95de-8c185f66a88d.pdf"
+
 
 print(f"Downloading: {internal_path}")
 

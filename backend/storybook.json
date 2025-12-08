@@ -1,0 +1,89 @@
+{
+  "world": {
+    "setting": "A plain soccer penalty field with a single goal and a simple scoreboard by the side. Short grass, open sky, and quiet sidelines to keep the scene clear.",
+    "characters": [
+      {
+        "id": "side_a",
+        "name": "First Team",
+        "role": "The first team: the side that kicks first in the shoot-out.",
+        "appearance": "A simple human soccer team wearing blue shirts, white shorts, and black cleats. One kicker steps up when it's their turn; the rest stand together by midfield.",
+        "emotional_style": "Usually calm and steady, often confident when leading."
+      },
+      {
+        "id": "side_b",
+        "name": "Second Team",
+        "role": "The second team: the side that kicks after the first team.",
+        "appearance": "A simple human soccer team wearing red shirts, white shorts, and black cleats. One kicker steps up when it's their turn; the rest wait together by midfield.",
+        "emotional_style": "Sometimes a bit tense, especially when trailing, but trying to stay brave."
+      },
+      {
+        "id": "guide",
+        "name": "Referee",
+        "role": "A friendly referee who explains what the results mean.",
+        "appearance": "A calm adult in a black referee uniform with a small whistle and a watch.",
+        "emotional_style": "Clear, fair, and helpful, pointing out what the scores show."
+      }
+    ],
+    "style_rules": [
+      "Soft, simple picture-book style with gentle colors.",
+      "No written WORDS or sentences inside the images.",
+      "Simple numeric scoreboards (like '3\u20131') are allowed when needed.",
+      "Do not introduce any new characters after page 1.",
+      "The hero, comparison character (if any), and guide ALWAYS keep the same body shapes, species, and main colors on every page.",
+      "Pick exactly ONE type of outcome object for this story (use soccer balls) and use it on all pages.",
+      "Keep each scene very simple with only a few important objects.",
+      "Scenes should show final results or clear current states, not complicated sequences of actions."
+    ]
+  },
+  "pages": [
+    {
+      "id": 1,
+      "title": "Who Kicks First?",
+      "caption": "It\u2019s a penalty shoot-out. First Team will kick first, and Second Team will go after. We want to see if starting first changes who wins.",
+      "visual_prompt": "On the penalty field, First Team\u2019s kicker stands at the spot with one soccer ball ready. Second Team waits a few steps behind. The scoreboard shows 0\u20130. Referee points toward the goal to start.",
+      "related_claim": "Main problem: does order change performance and winning?"
+    },
+    {
+      "id": 2,
+      "title": "First Team Wins More",
+      "caption": "Across many shoot-outs, the team that starts first wins more. Starting first gives them an edge.",
+      "visual_prompt": "On the field after many games, a big pile of soccer balls sits beside First Team and a smaller pile sits beside Second Team. Referee stands calmly between the two piles. No action, just the two piles showing who has more wins.",
+      "related_claim": "Claim 1: Going first raises the chance of winning."
+    },
+    {
+      "id": 3,
+      "title": "Often Ahead as Kicks Go On",
+      "caption": "As the rounds pass, the first team is more often in front. Being ahead feels easier.",
+      "visual_prompt": "Mid-shoot-out moment: the scoreboard shows 2\u20131. Two soccer balls are neatly stacked near First Team and one near Second Team to match the score. First Team looks calm; Second Team looks a bit tense. Referee watches quietly.",
+      "related_claim": "Claim 3: The first team is more often leading as rounds progress."
+    },
+    {
+      "id": 4,
+      "title": "Being Behind Feels Heavy",
+      "caption": "When a team is behind, the next kicker is more likely to miss. This happens more to the second team.",
+      "visual_prompt": "Second Team\u2019s kicker has just shot and a soccer ball lies outside the goal line near the post (a clear miss). The scoreboard shows 2\u20133, with Second Team trailing. Referee holds one hand out to signal the miss.",
+      "related_claim": "Claim 4: Being behind lowers a kicker\u2019s chance to score."
+    },
+    {
+      "id": 5,
+      "title": "Calm Kicks Go In",
+      "caption": "When not behind, the first team\u2019s kicker scores more. Feeling calm helps the ball go in.",
+      "visual_prompt": "First Team\u2019s kicker has just scored; one soccer ball is sitting in the net. The scoreboard shows 3\u20131. Referee points to the center to confirm the goal.",
+      "related_claim": "Claims 3 and 4: First team scores more as state stays favorable; pressure explains the gap."
+    },
+    {
+      "id": 6,
+      "title": "Players Choose to Start",
+      "caption": "Pros know this. Almost everyone picks to go first to add pressure on the other team.",
+      "visual_prompt": "Referee offers the first soccer ball to First Team while Second Team nods. The scoreboard simply shows the number 96. No other action.",
+      "related_claim": "Claim 2: Professionals prefer to kick first."
+    },
+    {
+      "id": 7,
+      "title": "The Clear Lesson",
+      "caption": "Order matters. Starting first usually means more goals and more wins, because pressure changes how people kick.",
+      "visual_prompt": "Side by side at the end: a larger pile of soccer balls by First Team and a smaller pile by Second Team. The scoreboard shows 5\u20133. Referee smiles gently, hands folded.",
+      "related_claim": "Overall finding: Going first significantly increases the chance of winning."
+    }
+  ]
+}

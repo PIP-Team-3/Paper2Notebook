@@ -45,89 +45,56 @@ async def create_kid_storyboard(
     storage: SupabaseStorage = Depends(dependencies.get_supabase_storage),
 ) -> StoryboardCreateResponse:
     """
-    Generate a kid-friendly storyboard (grade-3 reading level) for a paper.
+    TEMP STUB IMPLEMENTATION
 
-    - Creates 5-7 pages with required alt-text
-    - Stores storyboard in DB and Storage
-    - Returns signed URL for JSON access
+    For local development / integration testing:
+    - Call the kid storyboard generator (currently a stub in explain_kid.py)
+    - Do NOT write anything to Supabase DB or storage
+    - Just return a synthetic StoryboardCreateResponse so the frontend
+      can exercise the full request flow without errors.
     """
     paper_id = payload.paper_id
 
-    # Fetch paper to get title
-    paper = db.get_paper(paper_id)
-    if not paper:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": E_PAPER_NOT_FOUND, "message": f"Paper {paper_id} not found"},
-        )
-
-    # Get a plan summary (use latest plan if exists)
-    # For v0: just use paper title as context
-    plan_summary = f"We're testing the claims from this paper: {paper.title}"
-
+    # Try to look up the paper title if the DB is working, but don't fail if it isn't.
+    paper_title = "Untitled Paper"
     try:
-        storyboard_data = await explain_kid.generate_storyboard(
-            paper_id=paper_id,
-            paper_title=paper.title or "Untitled Paper",
-            plan_summary=plan_summary,
-        )
-    except ValueError as exc:
-        error_msg = str(exc)
-        if "alt_text" in error_msg.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": E_STORY_MISSING_ALT_TEXT, "message": error_msg},
-            )
-        elif "pages" in error_msg.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": E_STORY_TOO_FEW_PAGES, "message": error_msg},
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={"code": "E_STORY_GENERATION_FAILED", "message": error_msg},
-            )
+        paper = db.get_paper(paper_id)
+        if paper and getattr(paper, "title", None):
+            paper_title = paper.title
+    except Exception:
+        # If Supabase isn't configured locally, just fall back to a stub title.
+        paper_title = "Untitled Paper (local stub)"
 
-    # Generate ID and timestamps
+    # Simple plan summary stub; your real pipeline can replace this later.
+    plan_summary = f"We're testing the claims from this paper: {paper_title}"
+
+    # Call the (now stubbed) kid-mode storyboard generator
+    storyboard_data = await explain_kid.generate_storyboard(
+        paper_id=paper_id,
+        paper_title=paper_title,
+        plan_summary=plan_summary,
+    )
+
+    # Instead of saving to DB / storage, just fabricate IDs and timestamps.
     storyboard_id = f"story-{uuid.uuid4()}"
     now = datetime.now(timezone.utc)
-    storage_key = f"storyboards/{storyboard_id}.json"
 
-    # Save to database (v1)
-    storyboard_create = StoryboardCreate(
-        id=storyboard_id,
-        paper_id=paper_id,
-        run_id=None,  # Will be set on refresh
-        storyboard_json=storyboard_data,
-        storage_path=storage_key,
-        created_at=now,
-        updated_at=now,
-    )
-
-    db.insert_storyboard(storyboard_create)
-
-    # Save JSON to storage
-    import json
-
-    storage.store_text(storage_key, json.dumps(storyboard_data, indent=2), "application/json")
-
-    # Generate signed URL
-    signed_artifact = storage.create_signed_url(storage_key, expires_in=3600)
+    pages_count = len(storyboard_data.get("pages", []))
 
     logger.info(
-        "storyboard.created id=%s paper_id=%s pages=%d",
+        "storyboard.stub_created id=%s paper_id=%s pages=%d",
         storyboard_id,
         paper_id,
-        len(storyboard_data.get("pages", [])),
+        pages_count,
     )
 
+    # No storage backing in this stub, so signed_url is empty and expires_at is now.
     return StoryboardCreateResponse(
         storyboard_id=storyboard_id,
         paper_id=paper_id,
-        pages_count=len(storyboard_data.get("pages", [])),
-        signed_url=signed_artifact.signed_url or "",
-        expires_at=signed_artifact.expires_at.isoformat() if signed_artifact.expires_at else "",
+        pages_count=pages_count,
+        signed_url="",
+        expires_at=now.isoformat(),
     )
 
 
