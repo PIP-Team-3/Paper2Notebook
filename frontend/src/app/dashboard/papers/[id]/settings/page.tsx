@@ -1,9 +1,6 @@
-'use client';
-
-import { Check, Copy } from 'lucide-react';
-import { use, useEffect, useState } from 'react';
 import type { PaperSchema } from '../../_data/schemas';
 import { getPaper } from '../_data/fetchers';
+import { CopyButton } from './_components/copy-button';
 
 interface SettingsPageProps {
 	params: Promise<{
@@ -11,69 +8,42 @@ interface SettingsPageProps {
 	}>;
 }
 
-export default function SettingsPage({ params }: SettingsPageProps) {
-	const { id } = use(params);
+function formatDate(dateString: string | null) {
+	if (!dateString) return 'N/A';
+	return new Date(dateString).toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		timeZoneName: 'short',
+	});
+}
+
+export default async function SettingsPage({ params }: SettingsPageProps) {
+	const { id } = await params;
 	const paperId = id;
-	const [paper, setPaper] = useState<PaperSchema | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [copiedField, setCopiedField] = useState<string | null>(null);
 
-	useEffect(() => {
-		const loadPaper = async () => {
-			try {
-				setIsLoading(true);
-				setError(null);
-				const data = await getPaper(paperId);
-				setPaper(data);
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : 'Failed to load paper details';
-				setError(errorMessage);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+	let paper: PaperSchema | null = null;
+	let error: string | null = null;
 
-		loadPaper();
-	}, [paperId]);
+	try {
+		paper = await getPaper(paperId);
+	} catch (err) {
+		error = err instanceof Error ? err.message : 'Failed to load paper details';
+	}
 
-	const handleCopy = async (text: string, field: string) => {
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopiedField(field);
-			setTimeout(() => setCopiedField(null), 2000);
-		} catch (err) {
-			console.error('Failed to copy:', err);
-		}
-	};
-
-	const formatDate = (dateString: string | null) => {
-		if (!dateString) return 'N/A';
-		return new Date(dateString).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-			timeZoneName: 'short',
-		});
-	};
-
-	if (isLoading)
-		return (
-			<div className="py-12 text-center text-gray-500">
-				Loading paper settings...
-			</div>
-		);
-	if (error)
+	if (error) {
 		return <div className="rounded-lg bg-red-50 p-4 text-red-600">{error}</div>;
-	if (!paper)
+	}
+
+	if (!paper) {
 		return (
 			<div className="rounded-lg bg-gray-50 p-4 text-gray-600">
 				No paper data available
 			</div>
 		);
+	}
 
 	return (
 		<div className="space-y-6">
@@ -100,18 +70,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 								readOnly
 								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm"
 							/>
-							<button
-								type="button"
-								onClick={() => handleCopy(paper.title, 'title')}
-								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
-								title="Copy title"
-							>
-								{copiedField === 'title' ? (
-									<Check className="h-5 w-5 text-green-600" />
-								) : (
-									<Copy className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-								)}
-							</button>
+							<CopyButton text={paper.title} field="title" />
 						</div>
 					</div>
 
@@ -131,18 +90,7 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 								readOnly
 								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-gray-900 text-sm"
 							/>
-							<button
-								type="button"
-								onClick={() => handleCopy(paper.id, 'id')}
-								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
-								title="Copy ID"
-							>
-								{copiedField === 'id' ? (
-									<Check className="h-5 w-5 text-green-600" />
-								) : (
-									<Copy className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-								)}
-							</button>
+							<CopyButton text={paper.id} field="id" />
 						</div>
 					</div>
 
@@ -200,27 +148,23 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 									readOnly
 									className="flex-1 break-all rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm"
 								/>
-								{/* ... Link/Copy buttons ... */}
+								<CopyButton text={paper.sourceUrl} field="url" />
 							</div>
 						</div>
 					)}
 				</div>
 			</section>
 
-			{/* --- Processing Statistics Removed Here --- */}
-
 			{/* Advanced Settings */}
 			<section className="rounded-lg border border-gray-200 bg-white p-6">
 				<h3 className="mb-6 font-semibold text-gray-900 text-lg">
 					Advanced Settings
 				</h3>
-				{/* ... (Advanced settings content) ... */}
 				<div className="space-y-4 text-gray-600 text-sm">
 					<p>
 						Paper management features and additional configuration options will
 						appear here as the system develops.
 					</p>
-					{/* ... */}
 				</div>
 			</section>
 		</div>

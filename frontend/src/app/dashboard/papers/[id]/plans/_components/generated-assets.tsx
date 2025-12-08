@@ -13,15 +13,21 @@ interface AssetsResponse {
 interface GeneratedAssetsProps {
 	planId: string;
 	show: boolean;
+	initialAssets?: AssetsResponse | null;
 }
 
-export function GeneratedAssets({ planId, show }: GeneratedAssetsProps) {
-	const [assets, setAssets] = useState<AssetsResponse | null>(null);
+export function GeneratedAssets({
+	planId,
+	show,
+	initialAssets = null,
+}: GeneratedAssetsProps) {
+	const [assets, setAssets] = useState<AssetsResponse | null>(initialAssets);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!show) return;
+		// If we already have initial assets, don't fetch again
+		if (!show || initialAssets) return;
 
 		const fetchAssets = async () => {
 			try {
@@ -42,7 +48,7 @@ export function GeneratedAssets({ planId, show }: GeneratedAssetsProps) {
 		};
 
 		fetchAssets();
-	}, [planId, show]);
+	}, [planId, show, initialAssets]);
 
 	if (!show) return null;
 

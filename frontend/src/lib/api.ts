@@ -4,8 +4,11 @@ const constructAPIUrl = (path: string) => {
 	return `${BASE_API_URL}${path}`;
 };
 
-export const fetchAPI = async (path: string) => {
-	const req = await fetch(constructAPIUrl(path), { method: 'GET' });
+export const fetchAPI = async (path: string, options?: RequestInit) => {
+	const req = await fetch(constructAPIUrl(path), {
+		method: 'GET',
+		...options,
+	});
 
 	if (req.status === 404) {
 		throw new Error('404 Not Found: The requested paper could not be found.');
