@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AlertCircle, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchAPI } from '@/lib/api';
@@ -108,9 +109,6 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 		}
 	}, [planId]);
 
-	const handleBack = () => {
-		router.push(`/dashboard/papers/${paperId}/plans`);
-	};
 
 	const handleGenerateTests = async () => {
 		try {
@@ -416,13 +414,12 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 	return (
 		<div className="space-y-6">
 			{/* Back Button */}
-			<button
-				onClick={handleBack}
-				className="flex items-center gap-2 font-medium text-blue-600 transition-colors hover:text-blue-800"
-			>
-				<ChevronLeft className="h-5 w-5" />
-				Back to Plans
-			</button>
+			<Link href={`/dashboard/papers/${paperId}/plans`}>
+				<Button variant="ghost" className="gap-2">
+					<ChevronLeft className="h-4 w-4" />
+					Back to Plans
+				</Button>
+			</Link>
 
 			{/* Error Message */}
 			{error && (

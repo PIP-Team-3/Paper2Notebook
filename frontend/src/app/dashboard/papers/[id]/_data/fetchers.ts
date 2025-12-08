@@ -38,16 +38,6 @@ export async function getPlanById(
 	return response;
 }
 
-export async function getLatestPlan(paperId: string): Promise<unknown> {
-	// Get the first (most recent) plan from the list
-	const plans = await getAllPlans(paperId);
-	if (Array.isArray(plans) && plans.length > 0) {
-		// Get the full plan details for the latest plan
-		return getPlanById(paperId, plans[0].id);
-	}
-	throw new Error('No plans found for this paper');
-}
-
 export async function extractClaimsStream(
 	paperId: string,
 	onLog: (log: {

@@ -174,9 +174,9 @@ export default function ClaimsPage({
 									Initializing extraction agents...
 								</div>
 							)}
-							{logs.map((log, i) => (
+							{logs.map((log) => (
 								<div
-									key={i}
+									key={`${log.id}${log.message}`}
 									className="break-all border-gray-800 border-l-2 pl-2 hover:border-gray-700"
 								>
 									<span className="mr-2 text-gray-600">[{log.timestamp}]</span>
