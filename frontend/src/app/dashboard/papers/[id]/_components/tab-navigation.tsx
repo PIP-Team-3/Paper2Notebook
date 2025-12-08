@@ -40,8 +40,6 @@ export function TabNavigation({ paperId, tabs }: TabNavigationProps) {
 		}
 	};
 
-	const _gridColsClass = `grid w-full grid-cols-${Object.keys(tabs).length}`;
-
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
 			<TabsList className="grid w-full grid-cols-4">

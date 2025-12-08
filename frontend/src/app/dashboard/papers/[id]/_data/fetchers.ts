@@ -1,10 +1,9 @@
 import { fetchAPI, postAPI } from '../../../../../lib/api';
-import { mockPaper } from '../../_data/fetchers';
 import { type PaperSchema, paperSchema } from '../../_data/schemas';
 
 export async function getPaper(id: string): Promise<PaperSchema> {
 	const papersRes = await fetchAPI(`/papers/${id}`);
-	return mockPaper(paperSchema.parse(papersRes));
+	return paperSchema.parse(papersRes);
 }
 
 export async function createStoryboard(paperId: string): Promise<{
@@ -13,7 +12,7 @@ export async function createStoryboard(paperId: string): Promise<{
 	expires_at: string;
 }> {
 	// Calls POST /api/v1/explain/kid
-	return postAPI('/explain/kid', { paper_id: paperId }) as Promise<{
+	return (await postAPI('/explain/kid', { paper_id: paperId })) as Promise<{
 		storyboard_id: string;
 		signed_url: string;
 		expires_at: string;
@@ -21,21 +20,18 @@ export async function createStoryboard(paperId: string): Promise<{
 }
 
 export async function generateTests(planId: string): Promise<unknown> {
-	const response = await fetchAPI(`/plans/${planId}/materialize`);
-	return response;
+	return await fetchAPI(`/plans/${planId}/materialize`);
 }
 
 export async function getAllPlans(paperId: string): Promise<unknown> {
-	const response = await fetchAPI(`/papers/${paperId}/plans`);
-	return response;
+	return await fetchAPI(`/papers/${paperId}/plans`);
 }
 
 export async function getPlanById(
 	paperId: string,
 	planId: string,
 ): Promise<unknown> {
-	const response = await fetchAPI(`/papers/${paperId}/plans/${planId}`);
-	return response;
+	return await fetchAPI(`/papers/${paperId}/plans/${planId}`);
 }
 
 export async function extractClaimsStream(
@@ -120,8 +116,7 @@ export async function generatePlan(
 }
 
 export async function runTests(planId: string): Promise<unknown> {
-	const response = await fetchAPI(`/plans/${planId}/run`);
-	return response;
+	return await fetchAPI(`/plans/${planId}/run`);
 }
 
 export async function streamRunEvents(

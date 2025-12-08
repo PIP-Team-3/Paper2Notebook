@@ -18,14 +18,6 @@ export const paperStages = [
 	'report',
 ] as const;
 
-export type PaperStage = (typeof paperStages)[number];
-
-export interface PaperStats {
-	tokens: number;
-	cost: number;
-	runningTime: number;
-}
-
 export const paperSchema = incomingPaperSchema.transform((data) => ({
 	id: data.id,
 	title: data.title,
@@ -35,6 +27,4 @@ export const paperSchema = incomingPaperSchema.transform((data) => ({
 	stage: data.stage,
 }));
 
-export type PaperSchema = z.infer<typeof paperSchema> & {
-	stats: PaperStats;
-};
+export type PaperSchema = z.infer<typeof paperSchema>;

@@ -143,8 +143,8 @@ export default function HowItWorksPage() {
 													Key Features
 												</h3>
 												<ul className="space-y-2">
-													{step.details.map((detail, i) => (
-														<li key={i} className="flex items-start gap-3">
+													{step.details.map((detail, _i) => (
+														<li key={detail} className="flex items-start gap-3">
 															<CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
 															<span className="text-sm">{detail}</span>
 														</li>

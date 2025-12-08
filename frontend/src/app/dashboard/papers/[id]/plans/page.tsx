@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
 import { AlertCircle, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
 import { getAllPlans } from '../_data/fetchers';
 
 interface PlansPageProps {
@@ -105,6 +105,7 @@ export default function PlansPage({ params }: PlansPageProps) {
 					<div className="divide-y divide-gray-200">
 						{plans.map((plan) => (
 							<button
+								type="button"
 								key={plan.id}
 								onClick={() => handlePlanClick(plan.id)}
 								className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-gray-50"

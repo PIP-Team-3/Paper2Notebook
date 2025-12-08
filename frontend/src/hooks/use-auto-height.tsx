@@ -88,8 +88,8 @@ export function useAutoHeight<T extends HTMLElement = HTMLDivElement>(
 			ro.disconnect();
 			roRef.current = null;
 		};
-			// biome-ignore lint/correctness/useExhaustiveDependencies: deps passed in
-			}, deps);
+		// biome-ignore lint/correctness/useExhaustiveDependencies: deps passed in
+	}, deps);
 
 	React.useLayoutEffect(() => {
 		if (height === 0) {

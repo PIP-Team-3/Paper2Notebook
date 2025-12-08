@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { fetchAPI } from '../../../../../../lib/api';
+import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '../../../../../../components/ui/checkbox';
+import { fetchAPI } from '../../../../../../lib/api';
 
 interface Claim {
 	id: string;
@@ -20,7 +20,6 @@ interface Claim {
 interface ClaimsTableProps {
 	paperId: string;
 	show: boolean;
-	onClose: () => void;
 	onSelectionsChange?: (selectedClaims: Set<string>) => void;
 	refreshTrigger?: number;
 }
@@ -28,7 +27,6 @@ interface ClaimsTableProps {
 export function ClaimsTable({
 	paperId,
 	show,
-	onClose,
 	onSelectionsChange,
 	refreshTrigger,
 }: ClaimsTableProps) {

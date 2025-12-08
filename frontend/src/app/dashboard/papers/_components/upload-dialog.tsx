@@ -2,7 +2,15 @@
 
 import { Link as LinkIcon, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import type { DragEvent } from 'react';
+import { type ChangeEvent, useState } from 'react';
+import {
+	Tabs,
+	TabsContent,
+	TabsContents,
+	TabsList,
+	TabsTrigger,
+} from '../../../../components/animate-ui/components/radix/tabs';
 import { Button } from '../../../../components/ui/button';
 import {
 	Dialog,
@@ -12,13 +20,6 @@ import {
 	DialogTitle,
 } from '../../../../components/ui/dialog';
 import { Input } from '../../../../components/ui/input';
-import {
-	Tabs,
-	TabsContent,
-	TabsContents,
-	TabsList,
-	TabsTrigger,
-} from '../../../../components/animate-ui/components/radix/tabs';
 import { uploadPaper } from '../_data/fetchers';
 
 interface UploadDialogProps {
@@ -34,7 +35,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 
-	const handleDragOver = (e: React.DragEvent) => {
+	const handleDragOver = (e: DragEvent) => {
 		e.preventDefault();
 		setIsDragging(true);
 	};
@@ -43,7 +44,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		setIsDragging(false);
 	};
 
-	const handleDrop = (e: React.DragEvent) => {
+	const handleDrop = (e: DragEvent) => {
 		e.preventDefault();
 		setIsDragging(false);
 		const files = e.dataTransfer.files;
@@ -55,7 +56,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		}
 	};
 
-	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
 		if (files && files.length > 0) {
 			const selectedFile = files[0];
@@ -65,7 +66,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 		}
 	};
 
-	const handleDatasetFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleDatasetFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
 		if (files && files.length > 0) {
 			const selectedFile = files[0];
@@ -146,7 +147,10 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 						<TabsContent value="file" className="space-y-4">
 							{/* PDF Dropzone */}
 							<div>
-								<label className="mb-2 block font-medium text-sm">
+								<label
+									htmlFor="file-input"
+									className="mb-2 block font-medium text-sm"
+								>
 									Paper PDF
 								</label>
 								<button
@@ -167,7 +171,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 										className="hidden"
 										id="file-input"
 									/>
-									<label htmlFor="file-input" className="cursor-pointer">
+									<label htmlFor="file-input" className="block cursor-pointer">
 										<Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
 										<p className="font-medium text-sm">
 											{file ? file.name : 'Drag and drop your PDF here'}
@@ -181,18 +185,24 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 
 							{/* Optional Dataset File Input */}
 							<div>
-								<label className="mb-2 block font-medium text-sm">
+								<label
+									htmlFor="dataset-input"
+									className="mb-2 block font-medium text-sm"
+								>
 									Dataset (Optional)
 								</label>
-								<label htmlFor="dataset-input" className="block">
-									<div className="w-full cursor-pointer rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition hover:border-gray-400">
-										<input
-											type="file"
-											accept=".xlsx,.xls,.csv"
-											onChange={handleDatasetFileSelect}
-											className="hidden"
-											id="dataset-input"
-										/>
+								<div className="w-full cursor-pointer rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition hover:border-gray-400">
+									<input
+										type="file"
+										accept=".xlsx,.xls,.csv"
+										onChange={handleDatasetFileSelect}
+										className="hidden"
+										id="dataset-input"
+									/>
+									<label
+										htmlFor="dataset-input"
+										className="block cursor-pointer"
+									>
 										<p className="text-sm">
 											{datasetFile
 												? datasetFile.name
@@ -201,8 +211,8 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 										<p className="mt-1 text-gray-500 text-xs">
 											.xlsx, .xls, or .csv
 										</p>
-									</div>
-								</label>
+									</label>
+								</div>
 								{datasetFile && (
 									<button
 										type="button"

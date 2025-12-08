@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { AlertCircle, ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import React, { use, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { fetchAPI } from '@/lib/api';
+import type { LogEntry } from '../../_components/step-types';
 import {
-	getPlanById,
 	generateTests,
+	getPlanById,
 	runTests,
 	streamRunEvents,
 } from '../../_data/fetchers';
-import { PlanDisplay } from '../_components/plan-display';
 import { GeneratedAssets } from '../_components/generated-assets';
 import { LogsDisplay } from '../_components/logs-display';
-import type { LogEntry } from '../../_components/step-types';
+import { PlanDisplay } from '../_components/plan-display';
 
 interface PlanDetailPageProps {
 	params: Promise<{
@@ -108,7 +108,6 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 			checkArtifacts();
 		}
 	}, [planId]);
-
 
 	const handleGenerateTests = async () => {
 		try {
@@ -435,13 +434,7 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 			)}
 
 			{/* Plan Display */}
-			{plan && (
-				<PlanDisplay
-					plan={plan.plan_json || plan}
-					show={true}
-					onClose={() => {}}
-				/>
-			)}
+			{plan && <PlanDisplay plan={plan.plan_json || plan} show={true} />}
 
 			{/* Generate Tests Section */}
 			<div className="space-y-4 border-t pt-6">
@@ -493,7 +486,7 @@ export default function PlanDetailPage({ params }: PlanDetailPageProps) {
 
 				{/* Generated Assets */}
 				{(testsGenerated || artifactsExist) && !isCheckingArtifacts && (
-					<GeneratedAssets planId={planId} show={true} onClose={() => {}} />
+					<GeneratedAssets planId={planId} show={true} />
 				)}
 			</div>
 

@@ -1,7 +1,7 @@
 'use client';
 
+import { AlertCircle, Download, FileCode, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Download, AlertCircle, FileCode, FileText } from 'lucide-react';
 import { fetchAPI } from '../../../../../../lib/api';
 
 interface AssetsResponse {
@@ -13,14 +13,9 @@ interface AssetsResponse {
 interface GeneratedAssetsProps {
 	planId: string;
 	show: boolean;
-	onClose: () => void;
 }
 
-export function GeneratedAssets({
-	planId,
-	show,
-	onClose,
-}: GeneratedAssetsProps) {
+export function GeneratedAssets({ planId, show }: GeneratedAssetsProps) {
 	const [assets, setAssets] = useState<AssetsResponse | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);

@@ -1,6 +1,3 @@
-import type { ReactNode } from 'react';
-import type { PaperStage } from '../../_data/schemas';
-
 export interface LogEntry {
 	id: string;
 	timestamp: string;

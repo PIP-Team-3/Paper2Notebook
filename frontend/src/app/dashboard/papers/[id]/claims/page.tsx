@@ -1,26 +1,26 @@
 'use client';
 
-import { useState, use, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import {
 	AlertCircle,
-	Zap,
-	Terminal,
 	CheckCircle2,
 	Loader2,
+	Terminal,
+	Zap,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
 	DialogContent,
-	DialogHeader,
-	DialogTitle,
 	DialogDescription,
 	DialogFooter,
+	DialogHeader,
+	DialogTitle,
 } from '@/components/ui/dialog';
+import type { LogEntry } from '../_components/step-types';
 import { extractClaimsStream, generatePlan } from '../_data/fetchers';
 import { ClaimsTable } from './_components/claims-table';
-import type { LogEntry } from '../_components/step-types';
 
 export default function ClaimsPage({
 	params,
@@ -132,7 +132,6 @@ export default function ClaimsPage({
 			<ClaimsTable
 				paperId={paperId}
 				show={true}
-				onClose={() => {}}
 				onSelectionsChange={setSelectedClaims}
 				refreshTrigger={refreshTrigger}
 			/>

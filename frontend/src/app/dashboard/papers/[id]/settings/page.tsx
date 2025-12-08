@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { Copy, Check } from 'lucide-react';
-import { getPaper } from '../_data/fetchers';
+import { Check, Copy } from 'lucide-react';
+import { use, useEffect, useState } from 'react';
 import type { PaperSchema } from '../../_data/schemas';
+import { getPaper } from '../_data/fetchers';
 
 interface SettingsPageProps {
 	params: Promise<{
@@ -86,17 +86,22 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 				<div className="space-y-6">
 					{/* Paper Title */}
 					<div>
-						<label className="mb-2 block font-medium text-gray-700 text-sm">
+						<label
+							htmlFor="paper-title"
+							className="mb-2 block font-medium text-gray-700 text-sm"
+						>
 							Title
 						</label>
 						<div className="flex items-center gap-2">
 							<input
+								id="paper-title"
 								type="text"
 								value={paper.title}
 								readOnly
 								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-900 text-sm"
 							/>
 							<button
+								type="button"
 								onClick={() => handleCopy(paper.title, 'title')}
 								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
 								title="Copy title"
@@ -112,17 +117,22 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 
 					{/* Paper ID */}
 					<div>
-						<label className="mb-2 block font-medium text-gray-700 text-sm">
+						<label
+							htmlFor="paper-id"
+							className="mb-2 block font-medium text-gray-700 text-sm"
+						>
 							Paper ID
 						</label>
 						<div className="flex items-center gap-2">
 							<input
+								id="paper-id"
 								type="text"
 								value={paper.id}
 								readOnly
 								className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 font-mono text-gray-900 text-sm"
 							/>
 							<button
+								type="button"
 								onClick={() => handleCopy(paper.id, 'id')}
 								className="rounded-lg p-2 transition-colors hover:bg-gray-100"
 								title="Copy ID"
@@ -138,10 +148,14 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 
 					{/* Created Date */}
 					<div>
-						<label className="mb-2 block font-medium text-gray-700 text-sm">
+						<label
+							htmlFor="created-date"
+							className="mb-2 block font-medium text-gray-700 text-sm"
+						>
 							Created Date
 						</label>
 						<input
+							id="created-date"
 							type="text"
 							value={formatDate(paper.createdAt)}
 							readOnly
@@ -151,9 +165,9 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 
 					{/* Status */}
 					<div>
-						<label className="mb-2 block font-medium text-gray-700 text-sm">
+						<div className="mb-2 block font-medium text-gray-700 text-sm">
 							Processing Status
-						</label>
+						</div>
 						<div className="flex items-center gap-2">
 							<span
 								className={`inline-flex rounded-full px-3 py-1 font-medium text-sm capitalize ${
@@ -172,11 +186,15 @@ export default function SettingsPage({ params }: SettingsPageProps) {
 					{/* Source URL (if exists) */}
 					{paper.sourceUrl && (
 						<div>
-							<label className="mb-2 block font-medium text-gray-700 text-sm">
+							<label
+								htmlFor="source-url"
+								className="mb-2 block font-medium text-gray-700 text-sm"
+							>
 								Source URL
 							</label>
 							<div className="flex items-center gap-2">
 								<input
+									id="source-url"
 									type="text"
 									value={paper.sourceUrl}
 									readOnly
