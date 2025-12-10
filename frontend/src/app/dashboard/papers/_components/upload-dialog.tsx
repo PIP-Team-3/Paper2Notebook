@@ -1,16 +1,9 @@
 'use client';
 
-import { Link as LinkIcon, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { DragEvent } from 'react';
 import { type ChangeEvent, useState } from 'react';
-import {
-	Tabs,
-	TabsContent,
-	TabsContents,
-	TabsList,
-	TabsTrigger,
-} from '../../../../components/animate-ui/components/radix/tabs';
 import { Button } from '../../../../components/ui/button';
 import {
 	Dialog,
@@ -19,7 +12,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '../../../../components/ui/dialog';
-import { Input } from '../../../../components/ui/input';
 import { uploadPaper } from '../_data/fetchers';
 
 interface UploadDialogProps {
@@ -30,7 +22,6 @@ interface UploadDialogProps {
 export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 	const router = useRouter();
 	const [file, setFile] = useState<File | null>(null);
-	const [url, setUrl] = useState('');
 	const [datasetFile, setDatasetFile] = useState<File | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
@@ -82,7 +73,7 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 	};
 
 	const handleUpload = async () => {
-		if (!file && !url) {
+		if (!file) {
 			return;
 		}
 
@@ -90,15 +81,14 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 
 		try {
 			await uploadPaper(
-				file || undefined,
-				url || undefined,
+				file,
+				undefined,
 				datasetFile || undefined,
 			);
 
 			// Success - close dialog and refresh papers list
 			onOpenChange(false);
 			setFile(null);
-			setUrl('');
 			setDatasetFile(null);
 			router.refresh();
 		} catch (error) {
@@ -115,7 +105,6 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 	const handleDialogOpenChange = (newOpen: boolean) => {
 		if (!newOpen) {
 			setFile(null);
-			setUrl('');
 			setDatasetFile(null);
 		}
 		onOpenChange(newOpen);
@@ -127,129 +116,95 @@ export function UploadDialog({ open, onOpenChange }: UploadDialogProps) {
 				<DialogHeader>
 					<DialogTitle>Upload Paper</DialogTitle>
 					<DialogDescription>
-						Upload a PDF file or provide a link to a PDF
+						Upload a PDF file
 					</DialogDescription>
 				</DialogHeader>
 
-				<Tabs defaultValue="file" className="w-full">
-					<TabsList className="grid w-full grid-cols-2">
-						<TabsTrigger value="file" className="flex items-center gap-2">
-							<Upload className="h-4 w-4" />
-							Upload File
-						</TabsTrigger>
-						<TabsTrigger value="url" className="flex items-center gap-2">
-							<LinkIcon className="h-4 w-4" />
-							Add Link
-						</TabsTrigger>
-					</TabsList>
+				<div className="space-y-4">
+					{/* PDF Dropzone */}
+					<div>
+						<label
+							htmlFor="file-input"
+							className="mb-2 block font-medium text-sm"
+						>
+							Paper PDF
+						</label>
+						<button
+							type="button"
+							onDragOver={handleDragOver}
+							onDragLeave={handleDragLeave}
+							onDrop={handleDrop}
+							className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${
+								isDragging
+									? 'border-blue-500 bg-blue-50'
+									: 'border-gray-300 hover:border-gray-400'
+							}`}
+						>
+							<input
+								type="file"
+								accept=".pdf"
+								onChange={handleFileSelect}
+								className="hidden"
+								id="file-input"
+							/>
+							<label htmlFor="file-input" className="block cursor-pointer">
+								<Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+								<p className="font-medium text-sm">
+									{file ? file.name : 'Drag and drop your PDF here'}
+								</p>
+								<p className="mt-1 text-gray-500 text-xs">
+									or click to select a file
+								</p>
+							</label>
+						</button>
+					</div>
 
-					<TabsContents>
-						<TabsContent value="file" className="space-y-4">
-							{/* PDF Dropzone */}
-							<div>
-								<label
-									htmlFor="file-input"
-									className="mb-2 block font-medium text-sm"
-								>
-									Paper PDF
-								</label>
-								<button
-									type="button"
-									onDragOver={handleDragOver}
-									onDragLeave={handleDragLeave}
-									onDrop={handleDrop}
-									className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition ${
-										isDragging
-											? 'border-blue-500 bg-blue-50'
-											: 'border-gray-300 hover:border-gray-400'
-									}`}
-								>
-									<input
-										type="file"
-										accept=".pdf"
-										onChange={handleFileSelect}
-										className="hidden"
-										id="file-input"
-									/>
-									<label htmlFor="file-input" className="block cursor-pointer">
-										<Upload className="mx-auto mb-2 h-8 w-8 text-gray-400" />
-										<p className="font-medium text-sm">
-											{file ? file.name : 'Drag and drop your PDF here'}
-										</p>
-										<p className="mt-1 text-gray-500 text-xs">
-											or click to select a file
-										</p>
-									</label>
-								</button>
-							</div>
-
-							{/* Optional Dataset File Input */}
-							<div>
-								<label
-									htmlFor="dataset-input"
-									className="mb-2 block font-medium text-sm"
-								>
-									Dataset (Optional)
-								</label>
-								<div className="w-full cursor-pointer rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition hover:border-gray-400">
-									<input
-										type="file"
-										accept=".xlsx,.xls,.csv"
-										onChange={handleDatasetFileSelect}
-										className="hidden"
-										id="dataset-input"
-									/>
-									<label
-										htmlFor="dataset-input"
-										className="block cursor-pointer"
-									>
-										<p className="text-sm">
-											{datasetFile
-												? datasetFile.name
-												: 'Click to select a dataset'}
-										</p>
-										<p className="mt-1 text-gray-500 text-xs">
-											.xlsx, .xls, or .csv
-										</p>
-									</label>
-								</div>
-								{datasetFile && (
-									<button
-										type="button"
-										onClick={() => setDatasetFile(null)}
-										className="mt-2 text-red-600 text-sm hover:text-red-800"
-									>
-										Remove dataset
-									</button>
-								)}
-							</div>
-						</TabsContent>
-
-						<TabsContent value="url">
-							{/* URL Input */}
-							<div>
-								<label
-									htmlFor="url-input"
-									className="mb-2 block font-medium text-sm"
-								>
-									PDF Link
-								</label>
-								<Input
-									id="url-input"
-									type="url"
-									placeholder="https://example.com/paper.pdf"
-									value={url}
-									onChange={(e) => setUrl(e.target.value)}
-								/>
-							</div>
-						</TabsContent>
-					</TabsContents>
-				</Tabs>
+					{/* Optional Dataset File Input */}
+					<div>
+						<label
+							htmlFor="dataset-input"
+							className="mb-2 block font-medium text-sm"
+						>
+							Dataset (Optional)
+						</label>
+						<div className="w-full cursor-pointer rounded-lg border-2 border-gray-300 border-dashed p-6 text-center transition hover:border-gray-400">
+							<input
+								type="file"
+								accept=".xlsx,.xls,.csv"
+								onChange={handleDatasetFileSelect}
+								className="hidden"
+								id="dataset-input"
+							/>
+							<label
+								htmlFor="dataset-input"
+								className="block cursor-pointer"
+							>
+								<p className="text-sm">
+									{datasetFile
+										? datasetFile.name
+										: 'Click to select a dataset'}
+								</p>
+								<p className="mt-1 text-gray-500 text-xs">
+									.xlsx, .xls, or .csv
+								</p>
+							</label>
+						</div>
+						{datasetFile && (
+							<button
+								type="button"
+								onClick={() => setDatasetFile(null)}
+								className="mt-2 text-red-600 text-sm hover:text-red-800"
+							>
+								Remove dataset
+							</button>
+						)}
+					</div>
+				</div>
 
 				{/* Upload Button */}
 				<Button
 					onClick={handleUpload}
-					disabled={(!file && !url.trim()) || isUploading}
+					disabled={!file || isUploading}
 					className="w-full"
 				>
 					{isUploading ? 'Uploading...' : 'Upload'}
