@@ -4,3 +4,5 @@ openai
 pillow
 python-dotenv
 requests
+supabase
+pydantic

@@ -13,16 +13,30 @@ services:
       timeout: 10s
       retries: 3
 
+  storybook-generator:
+    build: ./storybook-generator
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./storybook-generator/.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   api:
     build: ./api
     ports:
       - "3001:3001"
     environment:
       - BACKEND_URL=http://backend:8000
+      - STORYBOOK_GENERATOR_URL=http://storybook-generator:8001
     env_file:
       - ./api/.env
     depends_on:
       - backend
+      - storybook-generator
 
   frontend:
     build:
@@ -31,5 +45,10 @@ services:
         NEXT_PUBLIC_API_URL: http://localhost:3001
     ports:
       - "3000:3000"
+    environment:
+      # Server-side URL for React Server Components (uses Docker network)
+      - API_URL=http://api:3001
+      # Client-side URL for browser (uses host machine)
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
     depends_on:
       - api

@@ -1,7 +1,19 @@
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL;
+// Use different API URLs for server-side vs client-side
+// Server-side (React Server Components): use API_URL for Docker networking
+// Client-side (browser): use NEXT_PUBLIC_API_URL for localhost
+const getBaseAPIUrl = () => {
+	// Check if running on server (React Server Components)
+	if (typeof window === 'undefined') {
+		// Server-side: prefer API_URL (Docker service name), fallback to NEXT_PUBLIC_API_URL
+		return process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
+	}
+	// Client-side: always use NEXT_PUBLIC_API_URL
+	return process.env.NEXT_PUBLIC_API_URL;
+};
 
 const constructAPIUrl = (path: string) => {
-	return `${BASE_API_URL}${path}`;
+	const baseUrl = getBaseAPIUrl();
+	return `${baseUrl}${path}`;
 };
 
 export const fetchAPI = async (path: string, options?: RequestInit) => {

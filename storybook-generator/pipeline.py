@@ -361,8 +361,8 @@ def generate_storybook_images(
     """
     Thin wrapper around your existing generate_images_from_storybook().
     """
-    # Lazy import so backend can start without Pillow when we don't generate images
-    from .generate_storybook import generate_images_from_storybook
+    # Lazy import so the service can start without Pillow when we don't generate images
+    from generate_storybook import generate_images_from_storybook
 
     print(f"\n[3/3] Generating storybook images from {storybook_path}…")
     results = generate_images_from_storybook(

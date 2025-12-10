@@ -635,23 +635,75 @@ class KidExplainRequest(BaseModel):
 async def create_kid_storybook(payload: KidExplainRequest):
     """
     Frontend calls: POST /explain/kid
-    This proxies to backend: POST /api/v1/explain/kid
+    This calls the storybook generator service directly.
     """
     import httpx
+    import uuid
+    from datetime import datetime, timezone
 
-    backend_url = os.environ.get("BACKEND_URL", "http://localhost:8000")
-    endpoint = f"{backend_url}/api/v1/explain/kid"
+    storybook_url = os.environ.get("STORYBOOK_GENERATOR_URL", "http://localhost:8001")
 
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        response = await client.post(endpoint, json=payload.model_dump())
+    # Get the paper to find its PDF storage path
+    paper_id = payload.paper_id
+    try:
+        paper = supabase.table("papers").select("pdf_storage_path").eq("id", paper_id).execute()
+        if not paper.data:
+            raise HTTPException(status_code=404, detail=f"Paper {paper_id} not found")
 
-    if response.status_code not in (200, 201):
+        paper_data = paper.data[0]
+        internal_path = paper_data.get("pdf_storage_path")
+
+        if not internal_path:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Paper {paper_id} has no pdf_storage_path set"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch paper: {str(e)}")
+
+    # Call the storybook generator service
+    endpoint = f"{storybook_url}/generate"
+
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            response = await client.post(
+                endpoint,
+                json={
+                    "internal_path": internal_path,
+                    "bucket": "papers",
+                    "generate_images": True,
+                }
+            )
+
+        if response.status_code not in (200, 201):
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Storybook generator failed: {response.text}",
+            )
+
+        result = response.json()
+        storyboard_data = result["storyboard_data"]
+        pages_count = result["pages_count"]
+
+        # Generate storyboard ID and return response
+        storyboard_id = f"story-{uuid.uuid4()}"
+        now = datetime.now(timezone.utc)
+
+        return {
+            "storyboard_id": storyboard_id,
+            "paper_id": paper_id,
+            "pages_count": pages_count,
+            "signed_url": "",
+            "expires_at": now.isoformat(),
+        }
+
+    except httpx.HTTPError as exc:
         raise HTTPException(
-            status_code=response.status_code,
-            detail=f"Backend kid explain failed: {response.text}",
+            status_code=500,
+            detail=f"Failed to generate storyboard: {str(exc)}"
         )
-
-    return response.json()
 
 
 @app.post("/explain/kid/{storyboard_id}/refresh")
