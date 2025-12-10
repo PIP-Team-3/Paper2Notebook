@@ -1,71 +1,70 @@
 # Paper2Notebook Frontend
 
-Transform research papers into interactive Jupyter notebooks using AI-powered analysis.
-
-## Prerequisites
-
-Before starting the frontend, ensure the backend REST API is running. See the [backend repository](https://github.com/PIP-Team-3/BackendAPI) for setup instructions.
+A Next.js web application that transforms research papers into interactive Jupyter notebooks using AI.
 
 ## Quick Start
 
-1. **Clone and install dependencies:**
+### 1. Install Dependencies
+
 ```bash
+cd frontend
 npm install
 ```
 
-2. **Configure environment variables:**
+### 2. Set Up Environment Variables
 
-Copy `.env.example` to `.env` and configure the API endpoint:
+Create a `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env` and set the backend API URL:
+Edit `.env` and configure the API URL:
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-Make sure the backend REST API is running before starting the frontend.
+### 3. Run the Development Server
 
-3. **Start the development server:**
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Features
+## Using with Docker
 
-- **Landing Page** - Hero, features showcase, how-it-works, modules
-- **Dashboard** - Responsive layout with desktop sidebar + mobile bottom drawer
-- **Papers Management** - Grid view, upload dialog, status indicators, dynamic details page
-- **Responsive Design** - Mobile-first, adapts to all screen sizes
+```bash
+# From project root
+docker-compose up frontend
+```
+
+The frontend will be available at `http://localhost:3000`
+
+## Key Features
+
+- **Paper Upload** - Upload research papers and track processing status
+- **Claims Extraction** - AI-powered extraction of scientific claims
+- **Plan Generation** - Create reproduction plans from extracted claims
+- **Test Execution** - Run generated Jupyter notebooks
+- **Storybook Mode** - Kid-friendly explanations of research papers
+- **Responsive Design** - Works on desktop and mobile devices
 
 ## Tech Stack
 
-- **Next.js 16** with React 19 & TypeScript
-- **Tailwind CSS 4** - Utility-first styling
-- **Radix UI** - Headless component primitives
-- **Zod** - Schema validation
-- **Biome** - Linting & formatting
+- **Next.js 15** with React 19 Server Components
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Radix UI** for accessible components
+- **Zod** for schema validation
 
-## Team & Contributions
-- **Justin**: Built website base
-- **Daewoong**: Built individual paper fetch functionality
-- **Jake**: Built paper upload functionality
-- **Ray**: Built dashboard homepage
-
-## npm Scripts
+## Available Scripts
 
 ```bash
-npm run dev      # Development server
-npm run build    # Production build
-npm run start    # Start production server
-npm run lint     # Run linter
+npm run dev      # Start development server
+npm run build    # Create production build
+npm run start    # Run production server
+npm run lint     # Check code quality
 npm run format   # Auto-format code
-```
-
-## Mock Data
-Currently, the app uses a mix of mocked and live data. Data is fetched from the backend and properties are added as the backend is still being developed. 
+``` 
