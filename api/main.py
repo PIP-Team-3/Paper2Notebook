@@ -667,7 +667,7 @@ async def create_kid_storybook(payload: KidExplainRequest):
     endpoint = f"{storybook_url}/generate"
 
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=600.0) as client:
             response = await client.post(
                 endpoint,
                 json={
