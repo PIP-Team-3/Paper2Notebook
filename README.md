@@ -189,6 +189,66 @@ The services will be available at:
 
 ---
 
+## Deployed Version
+
+Paper2Notebook is deployed on Google Cloud Run as four separate microservices (Frontend, API Gateway, Backend, Storybook Generator). Each service runs independently and can be scaled, updated, or replaced without affecting the others.
+
+**The production URL will be included in the project submission.**
+
+To use the deployed version, navigate to the Frontend URL - it connects to all backend services automatically.
+
+### How to Use
+
+1. **Upload a Paper**: Click "Upload Paper" and select a PDF of a machine learning research paper. Optionally attach a dataset file (.csv, .xlsx).
+
+2. **Extract Claims**: Once uploaded, click "Extract Claims" to have the AI analyze the paper and identify reproducible claims (datasets, metrics, reported values).
+
+3. **Generate Plan**: Select the claims you want to reproduce and click "Generate Plan" to create an execution strategy.
+
+4. **Generate Tests**: Click "Generate Tests" to materialize a Jupyter notebook with executable code.
+
+5. **Run Tests**: Execute the notebook directly in the cloud and view real-time streaming logs.
+
+6. **Download Artifacts**: Download the generated notebook and requirements.txt for local use.
+
+### Recommended Test Papers
+
+We will provide two papers in the project submission that we recommend for testing:
+
+1. **TextCNN Paper** - Does not require a dataset file. The system will automatically fetch the required data during execution.
+
+2. **Soccer Paper** - Requires the accompanying dataset file (included in submission). Upload this dataset along with the paper.
+
+These papers were the primary focus of our testing and provide the most reliable demonstration of the system's capabilities.
+
+### Important Notes
+
+- **One Upload Per Paper**: Each paper can only be uploaded once. Re-uploading the same paper requires manual database cleanup. This is by design to prevent duplicate processing.
+
+- **Pipeline is Sequential**: After upload, you must complete each step in order: Extract Claims → Generate Plan → Generate Tests → Run Tests.
+
+- **Processing Times**: Claim extraction takes 1-2 minutes. Notebook execution varies based on the complexity of the reproduction (typically 2-10 minutes).
+
+---
+
+## Storybook Mode (Prototype)
+
+The "Kid Mode" storybook feature is currently in **prototype phase**. It demonstrates the system's modularity by showing how additional services can be plugged into the architecture.
+
+**Current Capabilities**:
+- Generates simplified explanations of research papers
+- Creates AI-generated illustrations for each concept
+- Presents content in a kid-friendly storybook format
+
+**Architectural Significance**: The storybook generator runs as a completely separate microservice, demonstrating how the Paper2Notebook architecture supports:
+- **Service Independence**: Each service can be developed, deployed, and scaled independently
+- **Pluggable Modules**: New analysis or presentation modes can be added without modifying core services
+- **API-First Design**: All services communicate through well-defined REST APIs
+
+This modularity means Paper2Notebook can be extended with additional output formats (video explanations, interactive tutorials, etc.) by simply adding new microservices.
+
+---
+
 ## Key Features
 
 - **Paper Upload** - Drag and drop PDF uploads with progress tracking
