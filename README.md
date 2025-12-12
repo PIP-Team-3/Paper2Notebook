@@ -216,6 +216,8 @@ To use the deployed version, navigate to the Frontend URL - it connects to all b
 We will provide two papers in the project submission that we recommend for testing:
 
 1. **TextCNN Paper** - Does not require a dataset file. The system will automatically fetch the required data during execution.
+   - **Note (Deployed Version)**: The TextCNN paper cannot currently be executed on the deployed version due to Google Cloud Run's IP being banned from sending too many requests to external data sources. However, you can still upload the paper, extract its claims, and generate a test notebook.
+   - **Important**: When extracting claims from the TextCNN paper, only **SST-2** is available in the dataset registry. This is the only dataset claim that can be selected for reproduction.
 
 2. **Soccer Paper** - Requires the accompanying dataset file (included in submission). Upload this dataset along with the paper.
 
