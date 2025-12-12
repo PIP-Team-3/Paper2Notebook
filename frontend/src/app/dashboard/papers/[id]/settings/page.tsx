@@ -1,6 +1,7 @@
 import type { PaperSchema } from '../../_data/schemas';
 import { getPaper } from '../_data/fetchers';
 import { CopyButton } from './_components/copy-button';
+import { DeletePaperButton } from './_components/delete-paper-button';
 
 interface SettingsPageProps {
 	params: Promise<{
@@ -160,12 +161,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
 				<h3 className="mb-6 font-semibold text-gray-900 text-lg">
 					Advanced Settings
 				</h3>
-				<div className="space-y-4 text-gray-600 text-sm">
-					<p>
-						Paper management features and additional configuration options will
-						appear here as the system develops.
-					</p>
-				</div>
+				<DeletePaperButton paperId={paper.id} paperTitle={paper.title} />
 			</section>
 		</div>
 	);

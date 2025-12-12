@@ -11,7 +11,7 @@ const getBaseAPIUrl = () => {
 	return process.env.NEXT_PUBLIC_API_URL;
 };
 
-const constructAPIUrl = (path: string) => {
+export const constructAPIUrl = (path: string) => {
 	const baseUrl = getBaseAPIUrl();
 	return `${baseUrl}${path}`;
 };

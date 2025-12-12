@@ -103,6 +103,33 @@ async def upload_paper(
             detail=f"Paper upload failed: {str(e)}"
         )
 
+@app.delete("/papers/{paper_id}")
+async def delete_paper(paper_id: str):
+    """
+    Delete a paper by its ID.
+    Removes the paper row from the papers table in Supabase.
+    """
+    try:
+        # Delete the paper from the database
+        result = supabase.table("papers").delete().eq("id", paper_id).execute()
+
+        # Check if any rows were deleted
+        if not result.data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Paper with id {paper_id} not found"
+            )
+
+        return {"message": "Paper deleted successfully", "paper_id": paper_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete paper: {str(e)}"
+        )
+
 @app.get("/papers/{paper_id}/extract")
 async def extract_claims(paper_id: str):
     """

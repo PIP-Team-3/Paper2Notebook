@@ -68,7 +68,7 @@ function PaperTile({ paper }: { paper: PaperSchema }) {
 						{paper.title}
 					</CardTitle>
 					<IconComponent
-						className={`h-5 w-5 shrink-0 ${statusIcon.colorClass}`}
+						className={`h-5 w-5 ${statusIcon.colorClass} shrink-0`}
 					/>
 				</CardHeader>
 				<CardContent>
